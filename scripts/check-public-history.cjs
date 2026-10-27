@@ -21,7 +21,7 @@ const secretPatterns = [
   /\bgithub_pat_[A-Za-z0-9_]{20,}\b/
 ];
 const textExtension = /\.(?:md|json|ya?ml|html|js|cjs|css|xml|svg|txt)$/i;
-const forbiddenName = /(?:^|\/)(?:\.env(?:\..*)?|\.envrc|\.npmrc|\.git-credentials|profiles\.xml|device-profile\.xml)$|\.(?:p12|pfx|p8|p7b|pem|key|cer|crt|jks|keystore|token)$/i;
+const forbiddenName = /(?:^|\/)(?:node_modules|\.build|\.buildResult|\.sign|\.private|test-results|playwright-report)(?:\/|$)|(?:^|\/)(?:\.env(?:\..*)?|\.envrc|\.npmrc|\.git-credentials|profiles\.xml|device-profile\.xml)$|\.(?:p12|pfx|p8|p7b|pem|key|cer|crt|jks|keystore|token|wgt|tpk|sqlite|sqlite3|log)$/i;
 
 for (const commit of commits) {
   const emails = git('show', '-s', '--format=%ae%n%ce', commit).trim().split('\n');

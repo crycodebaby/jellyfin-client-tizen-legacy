@@ -119,7 +119,7 @@ test('Tizen-Vorbereitung enthält nur die erlaubten Laufzeitdateien', () => {
 
 test('Git ignoriert private und generierte Dateien, aber keine Projektdateien', () => {
   const ignored = ['.env.local', '.npmrc', 'private/test.p12', 'private/test.key', 'private/test.p8', 'profiles.xml', '.build/runtime/config.xml', 'example.wgt', 'node_modules/test/index.js'];
-  const kept = ['branding/config.js', 'assets/poster-horizon.svg', 'README.md', 'SKILL.md'];
+  const kept = ['branding/config.js', 'assets/poster-horizon.svg', 'README.md', 'SKILL.md', '.env.example'];
   function ignoreStatus(file) {
     const result = spawnSync('git', ['-c', `safe.directory=${root.replace(/\\/g, '/')}`, 'check-ignore', '--no-index', '-q', '--', file], { cwd: root });
     assert.ok(result.status === 0 || result.status === 1, 'Git-Ignore-Prüfung konnte ausgeführt werden');
