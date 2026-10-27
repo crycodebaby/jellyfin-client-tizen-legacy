@@ -38,6 +38,8 @@ Im Prototyp wird die eigene Jellyfin-Adresse eingegeben. Es ist keine private Se
 
 Die Vorschau lässt sich mit den Pfeiltasten, Enter und Escape bedienen. Über **Profil** oder **Server verbinden** öffnest du die Verbindungseinstellungen. Die Beispielkarten lassen sich öffnen und für die laufende Sitzung merken.
 
+In den Verbindungseinstellungen kannst du die Bewegung auf **Voll**, **Reduziert** oder **Aus** stellen. Bei langsamer Verbindungsprüfung erscheint eine dezente Ladeanzeige; die Navigation bleibt bedienbar. Details zu Verhalten und freiwilliger Diagnose stehen in [docs/MOTION.md](docs/MOTION.md).
+
 ## Prüfungen, Build und TV-Test
 
 Für die Entwicklungsprüfungen einmalig Abhängigkeiten und Testbrowser installieren:

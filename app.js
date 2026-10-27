@@ -26,6 +26,17 @@
   var activeItem = 0;
   var saved = {};
   var request = null;
+  var requestVersion = 0;
+  var requestStarted = 0;
+  var orbitTimer = null;
+  var failureTimer = null;
+  var pressed = null;
+  var pageRevision = 0;
+  var motionMode = 'reduced';
+  var motionManual = false;
+  var motionPreference = null;
+  var motionPreferenceHandler = null;
+  var diagnostics = window.SMAIRYS_DIAGNOSTICS || null;
   var homeView = document.getElementById('home-view');
   var sectionView = document.getElementById('section-view');
   var searchInput = document.getElementById('search-input');
@@ -63,6 +74,65 @@
 
   function addClass(element, name) {
     if (element && !hasClass(element, name)) { element.className += ' ' + name; }
+  }
+
+  function setMotion(mode, persist) {
+    var app = document.getElementById('app');
+    var choices = document.querySelectorAll('[data-action="motion"]');
+    var i;
+    if (mode !== 'full' && mode !== 'reduced' && mode !== 'off') { mode = 'reduced'; }
+    motionMode = mode;
+    removeClass(app, 'motion-full');
+    removeClass(app, 'motion-reduced');
+    removeClass(app, 'motion-off');
+    addClass(app, 'motion-' + mode);
+    for (i = 0; i < choices.length; i += 1) {
+      choices[i].setAttribute('aria-pressed', choices[i].getAttribute('data-mode') === mode ? 'true' : 'false');
+    }
+    if (persist) {
+      motionManual = true;
+      try { window.localStorage.setItem('smairys.motion', mode); } catch (error) {}
+    }
+  }
+
+  function initializeMotion() {
+    var mode = null;
+    var noPreference = null;
+    var supported = false;
+    try { mode = window.localStorage.getItem('smairys.motion'); } catch (error) {}
+    motionManual = mode === 'full' || mode === 'reduced' || mode === 'off';
+    try {
+      if (typeof window.matchMedia === 'function') {
+        motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+        noPreference = window.matchMedia('(prefers-reduced-motion: no-preference)');
+        supported = !!((motionPreference && motionPreference.matches) || (noPreference && noPreference.matches));
+      }
+    } catch (error) { motionPreference = null; }
+    if (!motionManual) {
+      mode = supported && noPreference && noPreference.matches ? 'full' : 'reduced';
+    }
+    if (motionPreference && supported) {
+      motionPreferenceHandler = function (event) { if (!motionManual) { setMotion(event.matches ? 'reduced' : 'full', false); } };
+      try {
+        if (typeof motionPreference.addEventListener === 'function') { motionPreference.addEventListener('change', motionPreferenceHandler); }
+        else if (typeof motionPreference.addListener === 'function') { motionPreference.addListener(motionPreferenceHandler); }
+      } catch (error) {}
+    }
+    setMotion(mode, false);
+  }
+
+  function animatePage(element) {
+    var revision = ++pageRevision;
+    var frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+    removeClass(homeView, 'page-enter');
+    removeClass(sectionView, 'page-enter');
+    if (motionMode === 'off' || typeof frame !== 'function') { return; }
+    frame.call(window, function () { if (revision === pageRevision && !modal && element.style.display !== 'none') { addClass(element, 'page-enter'); } });
+  }
+
+  function clearPressed() {
+    removeClass(pressed, 'is-pressed');
+    pressed = null;
   }
 
   function focusElement(element) {
@@ -122,9 +192,11 @@
   }
 
   function renderCards(container, indexes, zone) {
+    var started = diagnostics ? diagnostics.now() : 0;
     var i;
     while (container.firstChild) { container.removeChild(container.firstChild); }
     for (i = 0; i < indexes.length; i += 1) { container.appendChild(createCard(items[indexes[i]], indexes[i], zone)); }
+    if (diagnostics) { diagnostics.record('cards-dom', diagnostics.now() - started, indexes.length); }
   }
 
   function sectionIndexes() {
@@ -159,21 +231,31 @@
 
   function setPage(nextPage) {
     var nav = nodesForZone('nav');
+    var started = diagnostics ? diagnostics.now() : 0;
+    var activeIndex = 0;
+    var indicator = document.getElementById('nav-indicator');
     var i;
+    if (nextPage === page) { focusElement(currentNav()); return; }
+    if (request) { cancelRequest('Verbindung abgebrochen.'); }
     page = nextPage;
     searchInput.value = '';
     for (i = 0; i < nav.length; i += 1) {
       removeClass(nav[i], 'is-active');
       nav[i].removeAttribute('aria-current');
       if (nav[i].getAttribute('data-page') === page) {
+        activeIndex = i;
         addClass(nav[i], 'is-active');
         nav[i].setAttribute('aria-current', 'page');
       }
     }
     homeView.style.display = page === 'start' ? 'block' : 'none';
     sectionView.style.display = page === 'start' ? 'none' : 'block';
+    indicator.style.webkitTransform = 'translateY(' + (activeIndex * 72) + 'px)';
+    indicator.style.transform = 'translateY(' + (activeIndex * 72) + 'px)';
     if (page !== 'start') { renderSection(); }
+    animatePage(page === 'start' ? homeView : sectionView);
     focusElement(currentNav());
+    if (diagnostics) { diagnostics.record('page-dom', diagnostics.now() - started, activeCards().length); }
   }
 
   function activeCards() {
@@ -189,10 +271,13 @@
     returnFocus = focused;
     modal = 'connection';
     document.getElementById('connection-modal').style.display = 'block';
+    addClass(document.querySelector('.connection-panel'), 'is-opening');
     focusElement(serverInput);
   }
 
   function closeConnection() {
+    cancelRequest('Verbindung abgebrochen.');
+    removeClass(document.querySelector('.connection-panel'), 'is-opening');
     document.getElementById('connection-modal').style.display = 'none';
     modal = '';
     focusElement(returnFocus || currentNav());
@@ -204,37 +289,79 @@
     status.textContent = message;
   }
 
+  function setLoading(loading) {
+    var button = document.getElementById('check-server');
+    var panel = document.getElementById('connection-modal');
+    if (!loading && orbitTimer !== null) { window.clearTimeout(orbitTimer); orbitTimer = null; }
+    if (!loading && failureTimer !== null) { window.clearTimeout(failureTimer); failureTimer = null; }
+    if (!loading) { removeClass(document.getElementById('connection-orbit'), 'is-visible'); }
+    button.setAttribute('aria-disabled', loading ? 'true' : 'false');
+    panel.setAttribute('aria-busy', loading ? 'true' : 'false');
+  }
+
+  function cancelRequest(message) {
+    var previous = request;
+    requestVersion += 1;
+    request = null;
+    setLoading(false);
+    if (!previous) { return; }
+    previous.onreadystatechange = null;
+    previous.onerror = null;
+    previous.ontimeout = null;
+    try { previous.abort(); } catch (error) {}
+    if (diagnostics) { diagnostics.record('network-aborted', diagnostics.now() - requestStarted); }
+    if (message) { setConnectionStatus('', message); }
+  }
+
+  function finishRequest(xhr, version, kind, message) {
+    if (request !== xhr || requestVersion !== version || modal !== 'connection') { return; }
+    request = null;
+    setLoading(false);
+    setConnectionStatus(kind, message);
+    if (diagnostics) { diagnostics.record(kind === 'ok' ? 'network-success' : 'network-error', diagnostics.now() - requestStarted); }
+  }
+
   function checkServer() {
     var base = serverInput.value.replace(/^\s+|\s+$/g, '').replace(/\/+$/, '');
-    var done = false;
+    var version;
     var xhr;
+    if (request) { return; }
     if (!/^https?:\/\/[^\s/]+/i.test(base)) {
       setConnectionStatus('error', 'Bitte eine gültige Adresse mit http:// oder https:// eingeben.');
       focusElement(serverInput);
       return;
     }
-    if (request) { request.abort(); }
     setConnectionStatus('', 'Verbindung wird geprüft …');
     xhr = new XMLHttpRequest();
     request = xhr;
+    version = ++requestVersion;
+    requestStarted = diagnostics ? diagnostics.now() : 0;
+    setLoading(true);
+    orbitTimer = window.setTimeout(function () {
+      if (request === xhr && requestVersion === version && modal === 'connection') { addClass(document.getElementById('connection-orbit'), 'is-visible'); }
+      orbitTimer = null;
+    }, 200);
     xhr.onreadystatechange = function () {
       var info;
-      if (xhr.readyState !== 4 || done || request !== xhr) { return; }
-      done = true;
+      if (xhr.readyState !== 4 || request !== xhr || requestVersion !== version) { return; }
+      if (xhr.status === 0) {
+        failureTimer = window.setTimeout(function () { finishRequest(xhr, version, 'error', 'Keine Antwort. Adresse und Netzwerk prüfen.'); }, 0);
+        return;
+      }
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           info = JSON.parse(xhr.responseText);
-          setConnectionStatus('ok', 'Verbunden mit ' + (info.ServerName || 'Jellyfin') + (info.Version ? ' · ' + info.Version : ''));
-        } catch (error) { setConnectionStatus('error', 'Der Server hat keine gültige Jellyfin-Antwort gesendet.'); }
-      } else { setConnectionStatus('error', xhr.status ? 'Verbindung fehlgeschlagen · HTTP ' + xhr.status : 'Keine Antwort. Adresse und Netzwerk prüfen.'); }
+          finishRequest(xhr, version, 'ok', 'Verbunden mit ' + (info.ServerName || 'Jellyfin') + (info.Version ? ' · ' + info.Version : ''));
+        } catch (error) { finishRequest(xhr, version, 'error', 'Der Server hat keine gültige Jellyfin-Antwort gesendet.'); }
+      } else { finishRequest(xhr, version, 'error', 'Verbindung fehlgeschlagen · HTTP ' + xhr.status); }
     };
-    xhr.ontimeout = function () { if (!done && request === xhr) { done = true; setConnectionStatus('error', 'Zeitüberschreitung. Adresse und Netzwerk prüfen.'); } };
-    xhr.onerror = function () { if (!done && request === xhr) { done = true; setConnectionStatus('error', 'Verbindung fehlgeschlagen. Adresse, Netzwerk und CORS prüfen.'); } };
+    xhr.ontimeout = function () { finishRequest(xhr, version, 'error', 'Zeitüberschreitung. Adresse und Netzwerk prüfen.'); };
+    xhr.onerror = function () { finishRequest(xhr, version, 'error', 'Verbindung fehlgeschlagen. Adresse, Netzwerk und CORS prüfen.'); };
     try {
       xhr.open('GET', base + '/System/Info/Public', true);
       xhr.timeout = 8000;
       xhr.send(null);
-    } catch (error) { done = true; setConnectionStatus('error', 'Die Serveradresse konnte nicht geöffnet werden.'); }
+    } catch (error) { finishRequest(xhr, version, 'error', 'Die Serveradresse konnte nicht geöffnet werden.'); }
   }
 
   function openDetail(index) {
@@ -254,11 +381,14 @@
     document.getElementById('detail-footnote').textContent = isPerson ? 'Darstelleransichten folgen mit der Jellyfin-Anbindung.' : 'Wiedergabe und Bibliothek folgen nach der Verbindung.';
     saveButton.style.display = isPerson ? 'none' : 'inline-block';
     saveButton.textContent = saved[index] ? 'Aus Merkliste entfernen' : 'Merken';
+    saveButton.setAttribute('aria-pressed', saved[index] ? 'true' : 'false');
     document.getElementById('detail-modal').style.display = 'block';
+    addClass(document.querySelector('.detail-panel'), 'is-opening');
     focusElement(isPerson ? document.getElementById('detail-close') : saveButton);
   }
 
   function closeDetail() {
+    removeClass(document.querySelector('.detail-panel'), 'is-opening');
     document.getElementById('detail-modal').style.display = 'none';
     modal = '';
     if (page === 'merkliste') { renderSection(); focusElement(activeCards()[0] || currentNav()); }
@@ -275,9 +405,11 @@
     else if (action === 'samples') { focusElement(activeCards()[0]); }
     else if (action === 'detail') { openDetail(parseInt(element.getAttribute('data-item'), 10)); }
     else if (action === 'close-detail') { closeDetail(); }
+    else if (action === 'motion') { setMotion(element.getAttribute('data-mode'), true); }
     else if (action === 'save') {
       saved[activeItem] = !saved[activeItem];
       document.getElementById('save-button').textContent = saved[activeItem] ? 'Aus Merkliste entfernen' : 'Merken';
+      document.getElementById('save-button').setAttribute('aria-pressed', saved[activeItem] ? 'true' : 'false');
     }
   }
 
@@ -343,6 +475,9 @@
     var key = event.keyCode || event.which;
     var modalNodes;
     var modalIndex;
+    var previousFocus;
+    var started;
+    var frame;
     if (key === 9 && modal) {
       modalNodes = nodesForZone(modal);
       modalIndex = indexOfNode(modalNodes, focused);
@@ -350,10 +485,20 @@
       focusElement(modalNodes[(modalIndex + (event.shiftKey ? -1 : 1) + modalNodes.length) % modalNodes.length]);
       event.preventDefault();
     } else if (key >= 37 && key <= 40) {
+      previousFocus = focused;
+      started = diagnostics ? diagnostics.now() : 0;
       if (move(key)) { event.preventDefault(); }
+      if (diagnostics && previousFocus !== focused) {
+        diagnostics.record('focus-dom', diagnostics.now() - started);
+        frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+        if (typeof frame === 'function') { frame.call(window, function () { diagnostics.record('focus-frame-callback', diagnostics.now() - started); }); }
+      }
     } else if (key === 13) {
       if (event.target && event.target.tagName === 'INPUT') { return; }
       event.preventDefault();
+      clearPressed();
+      pressed = focused;
+      addClass(pressed, 'is-pressed');
       activate(focused);
     } else if (key === 10009 || key === 27 || (key === 8 && (!event.target || event.target.tagName !== 'INPUT'))) {
       event.preventDefault();
@@ -364,7 +509,23 @@
     }
   });
 
+  document.addEventListener('keyup', function (event) { if ((event.keyCode || event.which) === 13) { clearPressed(); } });
+  window.addEventListener('blur', clearPressed);
+  window.addEventListener('unload', function () {
+    cancelRequest();
+    if (motionPreference && motionPreferenceHandler) {
+      try {
+        if (typeof motionPreference.removeEventListener === 'function') { motionPreference.removeEventListener('change', motionPreferenceHandler); }
+        else if (typeof motionPreference.removeListener === 'function') { motionPreference.removeListener(motionPreferenceHandler); }
+      } catch (error) {}
+    }
+  });
   searchInput.oninput = function () { if (page === 'suche') { renderSection(); } };
+  serverInput.oninput = function () {
+    if (request) { cancelRequest('Adresse geändert. Bitte erneut prüfen.'); }
+    else { setConnectionStatus('', 'Noch nicht verbunden'); }
+  };
+  initializeMotion();
   applyBranding();
   renderCards(document.getElementById('home-cards'), [0, 1, 2, 3, 4]);
   window.onresize = fitViewport;

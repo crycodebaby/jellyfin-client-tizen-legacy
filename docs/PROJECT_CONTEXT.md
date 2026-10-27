@@ -25,6 +25,7 @@ PC-, TV- und Serveradressen sind private Entwicklungsdaten. Das Serverfeld der A
 - Jellyfin ist die einzige Quelle für Benutzer, Bibliotheken, Metadaten, Bilder, Medien und Wiedergabestatus.
 - Die auf Nutzerwunsch vorgezogene Oberfläche zeigt gekennzeichnete fiktive Beispieltitel. Suche und Merkliste verwenden nur diese Daten; die Merkliste lebt nur während der Sitzung.
 - Der Verbindungsdialog fragt ohne Anmeldung `GET /System/Info/Public` ab. Authentifizierung und Bibliotheks-API sind noch nicht implementiert.
+- Bewegungsmodi, verzögerte Ladeanzeige und optionale lokale Diagnose sind in `docs/MOTION.md` beschrieben. Die TV-Kompatibilität dieser Funktionen ist noch offen.
 - Samsung-TV-Web-Apps werden als WGT paketiert. Die aktuelle Deklaration `required_version="2.3"` folgt Samsungs Kompatibilitätshinweis für Geräte ab 2015; der Lauf auf dem Zielgerät ist nicht bewiesen.
 
 ## Dateien
@@ -33,7 +34,9 @@ PC-, TV- und Serveradressen sind private Entwicklungsdaten. Das Serverfeld der A
 | --- | --- |
 | `index.html` | Seitenleiste, Vorschauansichten sowie Detail- und Verbindungsdialog |
 | `styles.css` | 1920×1080-Layout und Fokusgestaltung |
+| `motion.css` | Bewegungsmodi und kurze Animationen |
 | `app.js` | Fokusnavigation, Beispieldaten, temporäre Merkliste und HTTP-Prüfung |
+| `diagnostics.js` | Nur ausdrücklich aktivierte lokale Diagnose ohne Datenversand |
 | `assets/` | Eigene schlanke SVG-Grafiken für Hero und Beispieltitel |
 | `config.xml` | Tizen-App-ID, Profil, Mindestversion, Netzwerkfreigabe und Icon |
 | `branding/` | Austauschbare Markenbilder; siehe `branding/README.md` |

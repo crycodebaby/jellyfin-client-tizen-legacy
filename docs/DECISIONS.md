@@ -41,3 +41,7 @@ Hier stehen Entscheidungen, die die weitere Umsetzung bestimmen. Nicht bestätig
 ## D10 – Markenwerte zentral konfigurieren
 
 **Status:** umgesetzt. Sichtbarer Name, Titel, Avatar-Buchstabe und Slogan stehen in `branding/config.js`; die Bilddateien bleiben unter stabilen Namen austauschbar. Der TV-Launcher-Name muss zusätzlich in `config.xml` angepasst werden, da das Manifest statisch ist.
+
+## D11 – Bewegung sparsam und abschaltbar
+
+**Status:** als Desktop-Vorschau umgesetzt, TV-Prüfung offen. Die Modi Voll, Reduziert und Aus sind lokal einstellbar. Ohne verlässlich erkannte Systemvorgabe wird reduziert gestartet. Die Ladeanzeige erscheint verzögert nur bei laufender Verbindungsprüfung. Navigation und Fokus warten nicht auf Animationen. Diagnose wird ausdrücklich aktiviert und sendet keine Daten. Messgrenzen und weitere Entscheidungen stehen in `docs/MOTION.md`.

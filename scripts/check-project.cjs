@@ -9,7 +9,7 @@ const { root, runtimeFiles } = require('./runtime-files.cjs');
 const runtime = new Set(runtimeFiles());
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-for (const file of ['app.js', 'branding/config.js']) {
+for (const file of ['app.js', 'diagnostics.js', 'branding/config.js']) {
   acorn.parse(read(file), { ecmaVersion: 5, sourceType: 'script' });
 }
 console.log('ES5-Syntax der TV-Laufzeit geprüft.');

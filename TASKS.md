@@ -16,6 +16,7 @@
 - [ ] Steuerkreuz, sichtbaren Fokus, OK und Zurück prüfen.
 - [ ] Jellyfin-HTTP-Anfrage aus der App prüfen.
 - [ ] Aufrufbarkeit von AVPlay auf Tizen 2.4 feststellen.
+- [ ] Bewegungsmodi, Fokus, Ladeanzeige und Abbruch einer Anfrage auf dem Zielgerät prüfen; Reaktionszeiten und Speicher dort messen.
 
 ## Öffentliche Veröffentlichung
 
@@ -26,7 +27,8 @@
 - [x] Desktop-Screenshot für die README erstellt; der Screenshot mit Markenlogo ist nicht unter MIT lizenziert.
 - [ ] Vor jedem Push Dateien und erreichbare Git-Historie auf private Daten und Commit-E-Mail-Adressen prüfen.
 - [x] Bereinigten Veröffentlichungszweig `github-ready` mit eigener Historie und GitHub-Noreply-Adresse vorbereiten; ältere lokale Entwicklungscommits bleiben lokal.
-- [ ] Öffentliches GitHub-Repository erstellen und geprüften Stand hochladen.
+- [x] Öffentliches GitHub-Repository `crycodebaby/jellyfin-client-tizen-legacy` erstellen.
+- [ ] Geprüften Stand zum GitHub-Repository hochladen.
 - [ ] Nach der Repository-Erstellung Issues, Pull Requests, Discussions und Wiki deaktivieren und Schreibrechte/Ruleset prüfen.
 
 ## Erledigt
@@ -39,6 +41,7 @@
 - [x] README und gemeinsame Einstiegsdokumente für Agenten angelegt.
 - [x] Projektname und Slogan für eigene Varianten in `branding/config.js` zentral konfigurierbar gemacht.
 - [x] GitHub-Actions-Workflow für eigene Pushes und manuelle Prüfungen vorbereitet; keine Pull-Request-Auslösung.
+- [x] Bewegungsmodi, verzögerte Ladeanzeige, Anfrageabbruch und optionale lokale Diagnose umgesetzt und im Desktop-Browser geprüft.
 
 ## Verifizierter Stand (27.10.2026)
 
@@ -48,7 +51,7 @@
 - Unter `C:\tizen-studio-data\ide\keystore\profiles.xml` wurde kein Signaturprofil gefunden.
 - `sdb devices` zeigte kein Gerät; der TV war unter der dokumentierten Entwicklungsadresse nicht erreichbar.
 - Installation, Fernbedienung am Gerät, Jellyfin-Anfrage vom TV und AVPlay sind ungetestet.
-- Das Projekt besitzt lokale Git-Commits, aber noch kein GitHub-Remote.
+- Das öffentliche GitHub-Repository ist erstellt. Veröffentlichung und tatsächliche Repository-Einstellungen müssen separat geprüft werden.
 
 ## Designprüfung – vorläufig, nur Desktop
 
@@ -57,6 +60,6 @@
 - **Minimalismus:** keine doppelten Einstellungsbuttons oder erklärenden Kacheln.
 - **Lesbarkeit:** Größen für 1080p gewählt; Betrachtungsabstand am TV muss geprüft werden.
 - **Konsistenz:** gemeinsame dunkle Palette, orangefarbener Fokus und wiederverwendete Karten und Aktionen.
-- **Microinteractions:** kurze Farb- und Rahmenübergänge; keine Daueranimation.
+- **Microinteractions:** kurze, einstellbare Übergänge; eine Ladeanimation läuft nur während einer langsameren Verbindungsprüfung.
 
 Das Skill-Ziel von 90/100 wird erst nach einer Bewertung am echten TV samt Betrachtungsabstand und Laufzeitverhalten eingeordnet.

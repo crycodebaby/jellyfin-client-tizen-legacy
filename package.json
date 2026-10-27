@@ -10,7 +10,9 @@
     "test:ui": "node --test tests/ui.test.cjs",
     "test": "npm run check && npm run test:ui",
     "prepare:tizen": "node scripts/prepare-runtime.cjs",
-    "screenshot": "node scripts/capture-preview.cjs"
+    "screenshot": "node scripts/capture-preview.cjs",
+    "screenshot:motion": "node scripts/capture-motion.cjs",
+    "measure:navigation": "node scripts/measure-navigation.cjs"
   },
   "devDependencies": {
     "@xmldom/xmldom": "0.9.12",

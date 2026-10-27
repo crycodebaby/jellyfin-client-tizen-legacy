@@ -1,0 +1,21 @@
+/* Motion-Tokens: instant 0ms, focus 110ms, press 90ms, feedback 140ms,
+   content 180ms, modal 200ms, loading-cycle 900ms. Keine CSS-Variablen:
+   Tizen 2.4 kann damit ohne Custom-Property-Unterstützung starten. */
+.motion-full .poster { -webkit-transition: -webkit-transform 110ms cubic-bezier(.2,.7,.2,1); transition: transform 110ms cubic-bezier(.2,.7,.2,1); }
+.motion-full .media-card.is-focused .poster { -webkit-transform: scale(1.025); transform: scale(1.025); }
+.motion-full .nav-indicator { -webkit-transition: -webkit-transform 140ms cubic-bezier(.2,.7,.2,1); transition: transform 140ms cubic-bezier(.2,.7,.2,1); }
+.motion-full .action-button, .motion-full .motion-choice, .motion-full .profile-button, .motion-full .media-card, .motion-full .nav-item { -webkit-transition: -webkit-transform 90ms cubic-bezier(.2,.7,.2,1), background-color 140ms ease-out; transition: transform 90ms cubic-bezier(.2,.7,.2,1), background-color 140ms ease-out; }
+.motion-full .is-pressed, .motion-full button:active { -webkit-transform: scale(.98); transform: scale(.98); }
+.motion-full .page-enter { -webkit-animation: smairys-page 180ms cubic-bezier(.2,.7,.2,1) both; animation: smairys-page 180ms cubic-bezier(.2,.7,.2,1) both; }
+.motion-full .modal-panel.is-opening { -webkit-animation: smairys-modal 200ms cubic-bezier(.2,.7,.2,1) both; animation: smairys-modal 200ms cubic-bezier(.2,.7,.2,1) both; }
+.motion-full .orbit.is-visible { -webkit-animation: smairys-orbit 900ms linear infinite; animation: smairys-orbit 900ms linear infinite; }
+.motion-reduced .page-enter, .motion-reduced .modal-panel.is-opening { -webkit-animation: smairys-fade 100ms ease-out both; animation: smairys-fade 100ms ease-out both; }
+.motion-off *, .motion-off *:before, .motion-off *:after { -webkit-animation: none !important; animation: none !important; -webkit-transition: none !important; transition: none !important; }
+@-webkit-keyframes smairys-page { from { opacity: .88; -webkit-transform: translateY(6px); } to { opacity: 1; -webkit-transform: translateY(0); } }
+@keyframes smairys-page { from { opacity: .88; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@-webkit-keyframes smairys-modal { from { opacity: .88; -webkit-transform: translateY(8px); } to { opacity: 1; -webkit-transform: translateY(0); } }
+@keyframes smairys-modal { from { opacity: .88; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@-webkit-keyframes smairys-fade { from { opacity: .9; } to { opacity: 1; } }
+@keyframes smairys-fade { from { opacity: .9; } to { opacity: 1; } }
+@-webkit-keyframes smairys-orbit { to { -webkit-transform: rotate(360deg); } }
+@keyframes smairys-orbit { to { transform: rotate(360deg); } }

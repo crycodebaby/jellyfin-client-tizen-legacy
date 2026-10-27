@@ -1,6 +1,6 @@
 # GitHub: Veröffentlichung ohne externe Beiträge
 
-Diese Schritte gelten **nachdem der Projektinhaber das Repository erstellt hat**. Die Einstellungen können nicht durch Dateien im lokalen Projekt erzwungen werden. Derzeit ist kein GitHub-Remote eingerichtet.
+Das öffentliche Repository wurde unter [crycodebaby/jellyfin-client-tizen-legacy](https://github.com/crycodebaby/jellyfin-client-tizen-legacy) erstellt. Die Einstellungen können nicht durch Dateien im lokalen Projekt erzwungen werden und müssen auf GitHub geprüft werden.
 
 ## Vor dem Push
 

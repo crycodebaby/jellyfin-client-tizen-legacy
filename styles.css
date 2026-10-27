@@ -10,12 +10,12 @@ button { cursor: pointer; }
 .brand-symbol { width: 66px; height: 66px; vertical-align: middle; }
 .brand-name { display: inline-block; margin-left: 8px; vertical-align: middle; color: #f6f5f2; font-size: 23px; font-weight: bold; letter-spacing: 3px; }
 .brand-name .brand-sub { display: block; margin-top: 6px; color: #a8a8a6; font-size: 15px; letter-spacing: 2.2px; }
-#navigation { margin-top: 39px; }
+#navigation { position: relative; margin-top: 39px; }
+.nav-indicator { position: absolute; z-index: 1; left: 0; top: 17px; width: 4px; height: 33px; border-radius: 3px; background: #d97732; pointer-events: none; }
 .nav-item { position: relative; display: block; width: 247px; height: 67px; margin: 0 0 5px; padding: 0 17px; border: 2px solid transparent; border-radius: 10px; background: transparent; color: #a8a8a6; text-align: left; font-size: 24px; }
 .nav-item svg { width: 25px; height: 25px; margin-right: 18px; vertical-align: -4px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .nav-item span { vertical-align: middle; }
 .nav-item.is-active { color: #f6f5f2; background: #202022; }
-.nav-item.is-active:before { position: absolute; top: 17px; bottom: 17px; left: -2px; width: 4px; border-radius: 3px; background: #d97732; content: ''; }
 .nav-item.is-focused, .nav-item:focus { outline: none; border-color: #f09243; color: #fff; }
 
 .content { position: absolute; left: 347px; top: 58px; width: 1504px; height: 965px; }
@@ -39,6 +39,7 @@ button { cursor: pointer; }
 .action-button + .action-button { margin-left: 12px; }
 .action-primary { background: #e28a47; color: #17100b; }
 .action-secondary { background: #2b2d30; color: #f6f5f2; }
+.action-button[aria-disabled="true"] { opacity: .8; }
 .action-button.is-focused, .action-button:focus { outline: none; border-color: #fff3e8; box-shadow: 0 0 0 3px #d97732; }
 .action-icon { padding-right: 9px; font-size: 26px; vertical-align: -2px; }
 .arrow-right { margin-left: 12px; font-size: 25px; }
@@ -86,10 +87,23 @@ button { cursor: pointer; }
 .modal-intro, .detail-copy > p:not(.section-kicker):not(.modal-footnote) { color: #bdbcb9; font-size: 22px; line-height: 1.45; }
 .connection-panel label { display: block; margin: 30px 0 10px; color: #d8d7d3; font-size: 20px; }
 .connection-panel input { padding: 0 17px; }
-.connection-status { min-height: 27px; margin: 14px 0 0; color: #a8a8a6; font-size: 18px; }
+.connection-feedback { min-height: 41px; margin-top: 14px; }
+.connection-status { display: inline-block; margin: 0; color: #a8a8a6; font-size: 18px; vertical-align: middle; }
 .connection-status.is-error { color: #e99087; }
 .connection-status.is-ok { color: #88cba2; }
 .modal-actions { margin-top: 28px; }
+.motion-setting { margin-top: 30px; }
+.motion-label { display: inline-block; width: 150px; color: #d8d7d3; font-size: 20px; vertical-align: middle; }
+.motion-options { display: inline-block; vertical-align: middle; }
+.motion-choice { min-width: 100px; height: 46px; margin-right: 8px; padding: 0 15px; border: 2px solid transparent; border-radius: 7px; color: #c9c8c4; background: #2b2d30; font-size: 18px; }
+.motion-choice[aria-pressed="true"] { color: #fff; background: #594332; }
+.motion-choice.is-focused, .motion-choice:focus { outline: none; border-color: #f09243; }
+.orbit { display: none; position: relative; width: 25px; height: 25px; margin-right: 12px; vertical-align: middle; }
+.orbit.is-visible { display: inline-block; }
+.orbit i { position: absolute; display: block; width: 7px; height: 7px; border-radius: 50%; background: #d97732; }
+.orbit i:nth-child(1) { left: 9px; top: 1px; }
+.orbit i:nth-child(2) { right: 2px; bottom: 3px; background: #9a461d; }
+.orbit i:nth-child(3) { left: 2px; bottom: 3px; background: #f2c9a5; }
 .modal-footnote { margin: 30px 0 0; color: #a8a8a6; font-size: 20px; }
 .detail-panel { top: 190px; width: 1000px; left: 460px; min-height: 570px; }
 .detail-art { position: absolute; top: 54px; left: 54px; width: 295px; height: 420px; border-radius: 8px; background-position: center; background-size: cover; }
@@ -98,4 +112,3 @@ button { cursor: pointer; }
 .detail-copy h2 { margin-top: 18px; font-size: 52px; }
 .detail-copy.is-person #detail-close { margin-left: 0; }
 
-@media (prefers-reduced-motion: no-preference) { .nav-item, .action-button, .poster, .profile-button { -webkit-transition: border-color .12s ease, background-color .12s ease; transition: border-color .12s ease, background-color .12s ease; } }
