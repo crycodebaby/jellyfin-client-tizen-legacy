@@ -36,7 +36,7 @@ Hier stehen Entscheidungen, die die weitere Umsetzung bestimmen. Nicht bestätig
 
 ## D9 – Externe Beiträge während der Entwicklungsphase geschlossen
 
-**Status:** vom Nutzer beschlossen. Das spätere GitHub-Repository ist öffentlich lesbar, wird aber allein vom Inhaber gepflegt. Issues, Pull Requests und Diskussionen sollen dort deaktiviert und keine externen Schreibrechte vergeben werden. Öffentliche Forks können dadurch nicht verhindert werden. Die tatsächlichen GitHub-Einstellungen sind nach Repository-Erstellung zu setzen; siehe `docs/GITHUB_SETUP.md`.
+**Status:** vom Nutzer beschlossen. Das GitHub-Repository ist öffentlich lesbar, wird aber allein vom Inhaber gepflegt. Issues, Pull Requests, Diskussionen und Wiki wurden deaktiviert; bei der Prüfung war nur der Inhaber als Collaborator aufgeführt. Öffentliche Forks können dadurch nicht verhindert werden. Weitere Einzelheiten und offene Einstellungen stehen in `docs/GITHUB_SETUP.md`.
 
 ## D10 – Markenwerte zentral konfigurieren
 

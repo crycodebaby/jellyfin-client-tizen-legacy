@@ -2,6 +2,8 @@
 
 Das öffentliche Repository wurde unter [crycodebaby/jellyfin-client-tizen-legacy](https://github.com/crycodebaby/jellyfin-client-tizen-legacy) erstellt. Die Einstellungen können nicht durch Dateien im lokalen Projekt erzwungen werden und müssen auf GitHub geprüft werden.
 
+**Stand 27.10.2026:** Der bereinigte Veröffentlichungszweig wurde als `main` hochgeladen. Issues, Pull Requests, Discussions und Wiki sind deaktiviert. Bei der Prüfung war `crycodebaby` der einzige Collaborator. Ein zusätzliches Branch-Ruleset ist noch nicht eingerichtet; Kommentare an einzelnen Commits waren in der Oberfläche noch aktiviert. Einstellungen können sich ändern und sollten erneut geprüft werden.
+
 ## Vor dem Push
 
 1. Den vorbereiteten Veröffentlichungsstand und seine gesamte erreichbare Git-Historie auf private Daten und persönliche Commit-E-Mail-Adressen prüfen. `npm run check:public -- github-ready` prüft häufige Muster und alle erreichbaren Commit-E-Mails; eine manuelle Prüfung bleibt erforderlich. Nur den eigens bereinigten Branch `github-ready` veröffentlichen, nicht ältere lokale Entwicklungsbranches.

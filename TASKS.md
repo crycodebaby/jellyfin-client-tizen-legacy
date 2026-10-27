@@ -28,8 +28,9 @@
 - [ ] Vor jedem Push Dateien und erreichbare Git-Historie auf private Daten und Commit-E-Mail-Adressen prüfen.
 - [x] Bereinigten Veröffentlichungszweig `github-ready` mit eigener Historie und GitHub-Noreply-Adresse vorbereiten; ältere lokale Entwicklungscommits bleiben lokal.
 - [x] Öffentliches GitHub-Repository `crycodebaby/jellyfin-client-tizen-legacy` erstellen.
-- [ ] Geprüften Stand zum GitHub-Repository hochladen.
-- [ ] Nach der Repository-Erstellung Issues, Pull Requests, Discussions und Wiki deaktivieren und Schreibrechte/Ruleset prüfen.
+- [x] Geprüften Stand zum GitHub-Repository hochgeladen; der lokale Veröffentlichungszweig folgt `origin/main`.
+- [x] Issues, Pull Requests, Discussions und Wiki deaktiviert; nur der Inhaber wurde als Collaborator gefunden.
+- [ ] Commit-Kommentare und zusätzliche Branch-Schutzregeln prüfen; bisher ist kein Ruleset eingerichtet.
 
 ## Erledigt
 
@@ -51,7 +52,7 @@
 - Unter `C:\tizen-studio-data\ide\keystore\profiles.xml` wurde kein Signaturprofil gefunden.
 - `sdb devices` zeigte kein Gerät; der TV war unter der dokumentierten Entwicklungsadresse nicht erreichbar.
 - Installation, Fernbedienung am Gerät, Jellyfin-Anfrage vom TV und AVPlay sind ungetestet.
-- Das öffentliche GitHub-Repository ist erstellt. Veröffentlichung und tatsächliche Repository-Einstellungen müssen separat geprüft werden.
+- Der geprüfte Veröffentlichungszweig wurde auf GitHub veröffentlicht; die Einstellungen und offenen Schutzmaßnahmen stehen in `docs/GITHUB_SETUP.md`.
 
 ## Designprüfung – vorläufig, nur Desktop
 
