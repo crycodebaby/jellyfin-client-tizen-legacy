@@ -1,0 +1,30 @@
+name: Projektprüfungen
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Entwicklungsabhängigkeiten installieren
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Chromium für Browserprüfungen installieren
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Quellcode und Vorschau prüfen
+        run: npm test
+      - name: Veröffentlichte Historie prüfen
+        run: npm run check:public -- HEAD

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Smairys Mediathek</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar" aria-label="Hauptnavigation">
+      <div class="brand">
+        <img src="branding/app-icon.png" alt="" class="brand-symbol">
+        <div class="brand-name"><span id="brand-name-main">SMAIRYS</span><span id="brand-name-sub" class="brand-sub">MEDIATHEK</span></div>
+      </div>
+      <nav id="navigation" aria-label="Bereiche">
+        <button class="nav-item is-active" type="button" data-page="start" data-zone="nav" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg><span>Start</span></button>
+        <button class="nav-item" type="button" data-page="filme" data-zone="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg><span>Filme</span></button>
+        <button class="nav-item" type="button" data-page="serien" data-zone="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8M12 18v3"/></svg><span>Serien</span></button>
+        <button class="nav-item" type="button" data-page="sammlungen" data-zone="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="14" height="15" rx="2"/><path d="M3 17V4a1 1 0 0 1 1-1h12"/></svg><span>Sammlungen</span></button>
+        <button class="nav-item" type="button" data-page="entdecken" data-zone="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg><span>Entdecken</span></button>
+        <button class="nav-item" type="button" data-page="suche" data-zone="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span>Suche</span></button>
+        <button class="nav-item" type="button" data-page="merkliste" data-zone="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4z"/></svg><span>Merkliste</span></button>
+      </nav>
+    </aside>
+
+    <main class="content" id="main-content">
+      <header class="topbar">
+        <span class="preview-label"><span></span>VORSCHAU · BEISPIELDATEN</span>
+        <button id="profile-button" class="profile-button" type="button" data-zone="profile" data-action="connection" aria-label="Profil und Einstellungen öffnen"><span id="brand-avatar" class="profile-avatar">S</span><span>Profil</span><span class="profile-chevron">⌄</span></button>
+      </header>
+
+      <section id="home-view" class="home-view" aria-label="Startseite">
+        <div class="hero">
+          <div class="hero-shade"></div>
+          <div class="hero-copy">
+            <p class="overline"><span></span>DEIN KINO ZU HAUSE</p>
+            <h1>Geschichten<br> warten auf dich.</h1>
+            <p class="hero-description">Deine Filme und Serien. Ein Ort, ganz für dich.</p>
+            <div class="hero-actions">
+              <button class="action-button action-primary" type="button" data-zone="hero" data-action="connection"><span class="action-icon">＋</span> Server verbinden</button>
+              <button class="action-button action-secondary" type="button" data-zone="hero" data-action="samples">Vorschau ansehen <span class="arrow-right">→</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="rail-heading"><div><p class="section-kicker">EIN ERSTER BLICK</p><h2>Für deinen nächsten Filmabend</h2></div></div>
+        <div id="home-cards" class="cards" aria-label="Beispieltitel"></div>
+      </section>
+
+      <section id="section-view" class="section-view" aria-live="polite" style="display:none">
+        <div class="page-heading"><p class="section-kicker">DEINE MEDIATHEK</p><h1 id="page-title"></h1><p id="page-description"></p></div>
+        <div id="search-wrap" class="search-wrap" style="display:none"><svg class="search-symbol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="search-input" type="text" data-zone="search" placeholder="Beispieltitel suchen" aria-label="Beispieltitel suchen"></div>
+        <div class="section-rail-heading"><h2 id="section-title"></h2></div>
+        <div id="section-cards" class="cards" aria-label="Beispieltitel"></div>
+        <p id="empty-state" class="empty-state" style="display:none"></p>
+        <div id="people-section" class="people-section" style="display:none"><h2>Darsteller entdecken</h2><div id="people-cards" class="cards people-cards" aria-label="Beispielpersonen"></div></div>
+      </section>
+    </main>
+
+    <div id="connection-modal" class="modal-layer" style="display:none" role="dialog" aria-modal="true" aria-labelledby="connection-title">
+      <div class="modal-panel connection-panel">
+        <p class="section-kicker">PROFIL &amp; EINSTELLUNGEN</p>
+        <h2 id="connection-title">Server verbinden</h2>
+        <p class="modal-intro">Gib die Adresse deines Jellyfin-Servers ein.</p>
+        <label for="server-url">Serveradresse</label>
+        <input id="server-url" type="text" data-zone="connection" placeholder="http://dein-server:8096" spellcheck="false">
+        <p id="connection-status" class="connection-status" aria-live="polite">Noch nicht verbunden</p>
+        <div class="modal-actions">
+          <button id="check-server" class="action-button action-primary" type="button" data-zone="connection" data-action="check">Verbindung prüfen</button>
+          <button class="action-button action-secondary" type="button" data-zone="connection" data-action="close-connection">Schließen</button>
+        </div>
+        <p class="modal-footnote">Smairys Connect und Benutzerprofile folgen später.</p>
+      </div>
+    </div>
+
+    <div id="detail-modal" class="modal-layer" style="display:none" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <div class="modal-panel detail-panel">
+        <div id="detail-art" class="detail-art"></div>
+        <div id="detail-copy" class="detail-copy"><p id="detail-kicker" class="section-kicker">BEISPIELTITEL · VORSCHAU</p><h2 id="detail-title"></h2><p id="detail-description"></p><div class="modal-actions"><button id="save-button" class="action-button action-primary" type="button" data-zone="detail" data-action="save">Merken</button><button id="detail-close" class="action-button action-secondary" type="button" data-zone="detail" data-action="close-detail">Zurück</button></div><p id="detail-footnote" class="modal-footnote">Wiedergabe und Bibliothek folgen nach der Verbindung.</p></div>
+      </div>
+    </div>
+  </div>
+  <script src="branding/config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

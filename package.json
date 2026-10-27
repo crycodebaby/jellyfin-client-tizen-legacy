@@ -1,0 +1,23 @@
+{
+  "name": "smairys-mediathek",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Entwicklung und Prüfungen für die Tizen-TV-Vorschau",
+  "scripts": {
+    "check": "node scripts/check-project.cjs",
+    "check:public": "node scripts/check-public-history.cjs",
+    "preview": "node scripts/preview.cjs",
+    "test:ui": "node --test tests/ui.test.cjs",
+    "test": "npm run check && npm run test:ui",
+    "prepare:tizen": "node scripts/prepare-runtime.cjs",
+    "screenshot": "node scripts/capture-preview.cjs"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "0.9.12",
+    "acorn": "8.19.0",
+    "playwright": "1.62.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

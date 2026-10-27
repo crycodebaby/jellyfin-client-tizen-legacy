@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://smairys.local/mediathek"
+        version="0.1.0"
+        viewmodes="maximized">
+  <name>Smairys Mediathek</name>
+  <description>Phase-0 Bedienungs- und Verbindungsprototyp</description>
+  <content src="index.html" />
+  <icon src="branding/app-icon.png" />
+  <access origin="*" subdomains="true" />
+  <tizen:application id="SmairysMed.Mediathek" package="SmairysMed" required_version="2.3" />
+  <tizen:profile name="tv-samsung" />
+  <tizen:setting screen-orientation="landscape"
+                 context-menu="disable"
+                 background-support="disable"
+                 encryption="disable"
+                 install-location="auto"
+                 hwkey-event="enable" />
+</widget>
