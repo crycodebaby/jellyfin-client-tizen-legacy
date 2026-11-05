@@ -1,47 +1,39 @@
 # Offene Projektaufgaben
 
-Aktueller Stand und Prüfgrenzen stehen in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md). Produktziele in [ZIELBILD.md](docs/ZIELBILD.md).
+Aktueller Stand in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md). Produktziele in [ZIELBILD.md](docs/ZIELBILD.md). Erledigte Versionsänderungen stehen im [Versionsverlauf](CHANGELOG.md).
 
-## Stabilisierung 0.1.41
+## Nächste Geräteabnahme
 
-- [x] Vollständige lokale Tests mit FFmpeg und QR ausführen.
-- [x] Profilwechsel vor Austausch der aktiven Sitzung validieren.
-- [x] Serverausfall und ungültige Zielanmeldung beim Profilwechsel simuliert prüfen.
-- [x] Fortsetzen auch bei HLS durch bestätigten Player-Suchvorgang prüfen.
-- [x] Position bei serverseitigem Tonwechsel erhalten, simuliert prüfen.
-- [x] Serien-Einstieg und Serienanzahl standardmäßig im UI ausblenden.
-- [x] Web-Build prüfen und 0.1.41 laut Apps2Samsung auf dem ersten TV installieren/starten.
-- [x] Fortsetzen nach Beenden und erneutem Öffnen bei einem Film auf dem ersten TV vom Nutzer bestätigt.
-- [ ] Weitere echte Filmformate, HLS, Tonwechsel, Untertitel und Wiedergabeende am TV abnehmen.
-- [ ] Fehlerfälle mit zwei echten Konten, Neustart, Speicherfehler und Serverausfall am Gerät prüfen.
+- [ ] 0.1.42 auf dem ersten TV prüfen: Entdecken mit Filterkombination und Reset, Suche mit Rückkehr zum Fokus, Startreihen, freie Posterflächen und Profilnavigation.
+- [ ] Weitere reale Medienformate, HLS-Suchvorgänge, Tonwechsel, Textuntertitel und Wiedergabeende prüfen.
+- [ ] Fehlerfälle mit zwei echten Konten, TV-Neustart, Speicherfehler und Serverausfall am Gerät prüfen.
+
+## TV-UI und Bedienung
+
+- [ ] Personenseite neu gliedern: kompakte Lebensdaten, lesbare Kurzbiografie und eigene Filmsektion. Biografievorschau darf bei Ordnungszahlen nicht abbrechen.
+- [ ] Personenseite im schmaleren PC-Fenster und auf dem TV getrennt prüfen. Rückweg passend zum Ursprung beschriften.
+- [ ] Ladefokus bei verzögerter Antwort absichern, insbesondere in Filme und Sammlungen.
+- [ ] Offene Gestaltungspunkte anhand der [Fokus-Maps](docs/TV_FOCUS_MAPS.md) am Gerät abnehmen.
 
 ## Wiedergabe
 
-- [ ] Geräteprofil anhand repräsentativer eigener Testdateien erweitern. MKV, HEVC und AC3 sind noch keine freigegebenen Fähigkeiten.
-- [ ] HLS-Zeitbasis und native Suchfähigkeit am Ziel-TV verifizieren.
+- [ ] Geräteprofil mit repräsentativen Medien prüfen. MKV, HEVC und AC3 sind noch keine freigegebenen Fähigkeiten.
 - [ ] Spurwechsel bei pausierter Wiedergabe und Wiederherstellung der Pause verbessern.
 - [ ] Externe Textuntertitel während Transcoding und Bilduntertitel untersuchen.
 - [ ] Wiederholung fehlgeschlagener Fortschrittsmeldungen und Offline-Verhalten entwickeln.
-- [ ] Serienabnahme erst bei tatsächlichem Bedarf. Bis dahin bleibt enableSeries aus.
+- [ ] Serien bei Bedarf abnehmen. Bis dahin bleibt `enableSeries` aus.
 
 ## Konten und Betrieb
 
 - [ ] Passwort-Fallback und sichere Tokenablage auf Tizen prüfen.
-- [ ] Account-Bilder anbinden und gespeicherte Profile gezielt entfernen können.
-- [ ] Update-Dienst und Versionsanzeige entwickeln. Derzeit installiert Apps2Samsung manuell.
+- [ ] Profilbilder anbinden und gespeicherte Profile gezielt entfernen können.
+- [ ] Update-Dienst und Versionsanzeige untersuchen. Der Gerätebetrieb nutzt private Apps2Samsung-Updates.
 - [ ] Plattformunabhängige Geräteprofile und mobile Oberfläche vorbereiten.
 
 ## Clips, Fernzugriff und Serverumzug
 
-- [ ] Clipquote, Speicherfehler, Löschung und authentifizierter mobiler Download.
+- [ ] Clipquote, Speicherfehler, Löschung und authentifizierten mobilen Download umsetzen.
 - [ ] Clipgrenzen und Ton mit echten Dateien prüfen.
-- [ ] Relay für getrennte HTTPS-Adressen, Hostprüfung und QR-Ziele entwickeln und abnehmen.
-- [ ] Heimserver nur als spätere Option. Vorlagen erst nach Hardwareentscheidung bereitstellen.
-- [ ] Sicherung wiederherstellen und Servermigration mit geänderten Medienpfaden und IDs testen.
-- [ ] Privaten Mobilfunkzugriff mit berechtigtem Gerät abnehmen.
-
-## Repository
-
-- [ ] Neue Änderungen künftig in kleinen nachvollziehbaren Commits sichern.
-- [ ] CI-Ergebnis nach GitHub-Push prüfen.
-- [ ] Historische Branches mit privaten Daten weder zusammenführen noch pauschal veröffentlichen.
+- [ ] Relay für getrennte HTTPS-Adressen, Hostprüfung und QR-Ziele abnehmen.
+- [ ] Heimserver und privaten Mobilfunkzugriff bei vorhandener Zielhardware einrichten. Die Vorlagen sind vorbereitet.
+- [ ] Sicherung und Migration mit geänderten Medienpfaden und IDs testen.

@@ -10,9 +10,8 @@ Zielgerät ist Samsung UE65KU6099, Tizen 2.4 und WebKit r152340. Laufzeitcode bl
 
 ## Aktueller Freigabestand
 
-- Version 0.1.41 hat 98 Basis- und 80 UI-Tests bestanden, ohne ausgelassene Tests bei konfiguriertem FFmpeg und Python. npm audit meldete keine bekannten Schwachstellen. Das ist eine zeitpunktbezogene Prüfung der Entwicklungsabhängigkeiten.
-- Web-Build geprüft. Apps2Samsung meldete Installation und Start von 0.1.41 auf dem ersten TV. Der Nutzer bestätigte Fortsetzen, Beenden und erneutes Öffnen an der richtigen Stelle bei einem Film. Die dabei verwendete Wiedergabeart wurde nicht erfasst.
-- Der zweite TV erhielt zuletzt 0.1.39. Kein automatisches Update implementiert.
+- Version 0.1.42 bestand 98 Basis- und 80 UI-Tests mit FFmpeg und QR ohne Auslassungen. Der Build und das signierte Paket wurden geprüft. Apps2Samsung meldete das Update und den Start auf dem ersten TV. Die Bedienabnahme für 0.1.42 steht aus. Geräte- und Build-Nachweise stehen im [Tizen-Leitfaden](TIZEN_BUILD.md).
+- Bei 0.1.41 bestätigte der Nutzer auf dem ersten TV das Fortsetzen eines Films nach Beenden und erneutem Öffnen. Die Wiedergabeart wurde nicht erfasst. Der zweite TV erhielt zuletzt 0.1.39.
 - Profilwechsel prüft die Zielsitzung vor dem Wechsel. Simulierte Tests prüfen erfolgreiche Wechsel, Serverausfall und ungültige Zielanmeldung.
 - Direktwiedergabe und HLS verwenden denselben Such- und Bestätigungsablauf zum Fortsetzen. Fortschritt bleibt während eines ausstehenden Sprungs unterdrückt. HLS-Zeitbasis und Suchfähigkeit müssen mit echten Medien am TV verifiziert werden.
 - Serverseitiger Tonwechsel versucht, die aktuelle Position nach dem Quellenwechsel wiederherzustellen. Simuliert geprüft, Geräteabnahme offen.
@@ -52,6 +51,12 @@ Profile und Sammlungsverknüpfungen sind nach Serveradresse und Benutzer-ID getr
 - Vollständige Medien-, Fernbedienungs- und Wiederherstellungsabnahme bleibt Freigabetor.
 
 ## Arbeitsweise und Abnahme
+
+TV-Designarbeit: [TV-UX-Analyse](TV_UX_REVIEW.md), [Fokus-Maps](TV_FOCUS_MAPS.md) und [Designwerkzeuge](DESIGN_TOOLING.md). Die überarbeitete [Designanleitung](../SKILL.md) trennt Hardwaregrenzen, Produktwünsche und veränderbare Gestaltung. Die Analyse vom 5. November ist keine neue UI-Version oder Geräteabnahme.
+
+Die Startseite hat eine feste Kopfzeile und eine umbruchfähige Begrüßung. Filmjahr, Gesehen-Markierung und Fortschritt stehen außerhalb der Poster. Entdecken bündelt Suche, Sortierung und kombinierbare Filter. Jahressortierung und Jahrzehntfilter wurden zusätzlich in der Browser-Vorschau mit der lokalen Jellyfin-Bibliothek geprüft. Die Personenseite hat derzeit eine gekürzte Kurzbiografie und ein fest skaliertes TV-Layout. Ihre Neugestaltung steht in [TASKS.md](../TASKS.md).
+
+In Entdecken entsteht die Darsteller-Rangliste aus der Besetzung verfügbarer Filme des angemeldeten Profils. Der Client lädt die Filmdaten seitenweise und hält die vollständige Rangliste bis zu fünf Minuten im Speicher der Sitzung. Namenssuche und A–Z filtern diese Rangliste. Wenn keine Filmzahlen ermittelt werden können, bleibt die Personensuche mit entsprechendem Hinweis nutzbar.
 
 npm test prüft Basis und UI. Für vollständige Medienprüfungen SMAIRYS_TEST_FFMPEG und SMAIRYS_TEST_FFPROBE auf FFmpeg setzen. SMAIRYS_QR_PYTHON muss auf Python mit ReportLab zeigen. CI installiert diese Werkzeuge ebenfalls.
 

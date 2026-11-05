@@ -28,6 +28,7 @@ For visual or remote-navigation work, also read the project design skill in `SKI
 - Jellyfin is the single source of truth for users, libraries, metadata, and media.
 - Samsung TV web apps use WGT packages. Never claim a build, install, playback, or hardware test succeeded without direct evidence.
 - Remote navigation and visible focus are core behavior; mouse interaction is optional.
+- Keep film artwork unobstructed. Put all app-generated metadata, badges, progress indicators, and controls outside the poster image area in every card state, including focus and preview rows. Draw focus around the artwork.
 - Keep on-screen copy minimal: remove repeated headings and explanatory filler, but preserve labels and actionable status, error, and navigation information.
 - Branding assets live under `branding/`. Preserve their filenames so another user can rebrand by replacing those files only.
 - Logos are excluded from the MIT license. Do not imply permission to reuse them or delete the exclusion.
@@ -38,7 +39,7 @@ For visual or remote-navigation work, also read the project design skill in `SKI
 ## Working agreement
 
 - Check `git status` before edits; preserve unrelated changes.
-- The user explicitly requested the visual prototype before Phase 0 passed. Keep Phase 0 as an open release gate and do not present the preview as a validated TV client.
+- Keep public source previews, private TV builds and device acceptance separate. Use the release evidence in docs/TIZEN_BUILD.md and the remaining device checks in TASKS.md.
 - Make small, reviewable changes. Update `TASKS.md` and the context/decision docs when project facts change.
 - Run checks appropriate to edited files and state their limits accurately. Desktop checks do not prove TV compatibility.
 - If a prerequisite is missing, record the exact observed blocker and continue work that does not depend on it.

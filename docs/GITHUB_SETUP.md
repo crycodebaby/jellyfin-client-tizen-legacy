@@ -1,24 +1,19 @@
-# GitHub: Veröffentlichung ohne externe Beiträge
+# GitHub-Publikation
 
-Das öffentliche Repository wurde unter [crycodebaby/jellyfin-client-tizen-legacy](https://github.com/crycodebaby/jellyfin-client-tizen-legacy) erstellt. Die Einstellungen können nicht durch Dateien im lokalen Projekt erzwungen werden und müssen auf GitHub geprüft werden.
+[crycodebaby/jellyfin-client-tizen-legacy](https://github.com/crycodebaby/jellyfin-client-tizen-legacy) ist die öffentliche Quellcode-Vorschau. Die TV-Testpakete bleiben lokal. Externe Beiträge sind während der Entwicklungsphase geschlossen.
 
-**Stand 27.10.2026:** Der bereinigte Veröffentlichungszweig wurde als `main` hochgeladen. Issues, Pull Requests, Discussions und Wiki sind deaktiviert. Bei der Prüfung war `crycodebaby` der einzige Collaborator. Ein zusätzliches Branch-Ruleset ist noch nicht eingerichtet; Kommentare an einzelnen Commits waren in der Oberfläche noch aktiviert. Einstellungen können sich ändern und sollten erneut geprüft werden.
+## Geprüfte Einstellungen
 
-## Vor dem Push
+Am 5. November 2026 war `main` der Standardbranch und nur das Inhaberkonto als Collaborator aufgeführt. Issues, Pull Requests, Discussions, Wiki und Projects sind deaktiviert. Das aktive Ruleset **Protect main history** sperrt Löschen und Force-Push auf `main`. Normale Fast-Forward-Updates bleiben möglich. Die Sichtbarkeit ist öffentlich und Forks bleiben möglich.
 
-1. Den vorbereiteten Veröffentlichungsstand und seine gesamte erreichbare Git-Historie auf private Daten und persönliche Commit-E-Mail-Adressen prüfen. `npm run check:public -- github-ready` prüft häufige Muster und alle erreichbaren Commit-E-Mails; eine manuelle Prüfung bleibt erforderlich. Nur den eigens bereinigten Branch `github-ready` veröffentlichen, nicht ältere lokale Entwicklungsbranches.
-2. Dateien wie Tokens, `.env`, Zertifikate, Schlüssel, Geräteeinstellungen, Logs, lokale Datenbanken und WGT-Builds aus dem Repository heraushalten. `.gitignore` schützt nur nicht erfasste Dateien; bereits verfolgte Dateien und frühere Commits müssen gesondert geprüft werden.
-3. MIT für Code und Dokumentation sowie die Ausnahme der drei Smairys-Logos in `LICENSE`, `README.md` und `branding/README.md` prüfen.
-4. Das Repository als öffentliche Entwicklungsvorschau kennzeichnen. Ein installierbares WGT oder eine bestätigte TV-Kompatibilität liegen noch nicht vor.
+Die GitHub Actions laufen bei Pushes und auf manuelle Anforderung. Sie haben lesenden Zugriff, benötigen keine Projektgeheimnisse und verwenden feste Commit-Referenzen für Drittcode. Die CI installiert Chromium, FFmpeg und Python mit ReportLab.
 
-## Einstellungen nach der Erstellung
+## Veröffentlichung prüfen
 
-1. **Settings → General → Features:** **Issues**, **Pull requests**, **Discussions** und **Wikis** deaktivieren, sofern die Optionen in der Oberfläche angeboten werden. [GitHub: Issues deaktivieren](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/disabling-issues), [Pull Requests deaktivieren](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/disabling-pull-requests), [Discussions deaktivieren](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/enabling-or-disabling-github-discussions-for-a-repository).
-2. Unter **Settings → Collaborators** beziehungsweise **Manage access** keine externen Personen oder Teams mit Schreibrechten hinzufügen; vorhandene Berechtigungen prüfen.
-3. Einen Branch-Ruleset für die Veröffentlichungsbranches einrichten: Erstellen, Ändern und Löschen auf berechtigte Bypass-Akteure beschränken; nur dem Inhaber beziehungsweise den zuständigen Administratoren Bypass gewähren. Vorher prüfen, dass der Inhaber weiterhin pushen kann. [GitHub: Regeln für Rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets)
-4. GitHub Actions nur für den eigenen `push` und manuelle Auslösung verwenden. Der vorbereitete Workflow hat keine Pull-Request-Auslösung und benötigt keine Projektgeheimnisse.
-5. Nach dem Speichern die Repository-Seite und die Einstellungen mit einem nicht angemeldeten Fenster beziehungsweise einem Konto ohne Schreibrechte prüfen.
+1. Arbeitsbaum mit `node scripts/check-public-history.cjs --worktree` prüfen. Neue Dateien und Änderungen zusätzlich manuell sichten.
+2. Mit einer GitHub-Noreply-Adresse committen. Vor dem Push `npm run check:public -- HEAD` für die gesamte Historie des **konkret zu veröffentlichenden Stands** ausführen.
+3. Den vorgesehenen Remote und Zielbranch prüfen. Nur den geprüften Stand gezielt pushen und anschließend den CI-Lauf kontrollieren. Ältere lokale Entwicklungsbranches enthalten private Historie. Sie bleiben lokal.
+4. Keine Zugangsdaten, privaten Geräteangaben, Medienlisten, Gerätescreenshots, Zertifikate, WGTs oder Logs einchecken. `.gitignore` allein entfernt keine Daten aus bereits verfolgten Dateien oder Commits.
+5. Die MIT-Lizenz gilt für Code und Projektdokumentation. Die Marken- und Logoausnahmen stehen in [LICENSE](../LICENSE) und [branding/README.md](../branding/README.md).
 
-**Grenze:** Bei einem öffentlichen Repository können andere den Quellcode lesen, herunterladen und auf GitHub forken. Ein Fork ist ein eigenes Repository und ändert das Original nicht. GitHub bestätigt, dass öffentliche Repositories geforkt werden können. [GitHub: Forks](https://docs.github.com/en/pull-requests/reference/forks)
-
-Die MIT-Nutzung des Codes bleibt möglich. Die Smairys-Logos sind nicht unter MIT lizenziert und müssen für eigene Marken ersetzt werden.
+Referenzen: [Repository-Einstellungen](https://docs.github.com/en/rest/repos/repos), [GitHub-Rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets).
