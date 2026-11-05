@@ -53,7 +53,13 @@
   var detailRequest = null;
   var trailerRequest = null, trailerId = '', playerIsTrailer = false;
   var favoriteFilter = 'all';
-  var genreItems = [], genreIndex = -1, genreRequest = null, genreRevision = 0, discoverSort = 'title';
+  var genreItems = [], genreRequest = null, genreRevision = 0;
+  var discoverSort = 'title', discoverStatus = 'all', discoverPeriod = 'all', discoverOptionsTrigger = null;
+  var discoverChoices = {
+    'sort-filter': [['title', 'Titel A–Z'], ['oldest', 'Älteste zuerst'], ['newest', 'Neueste zuerst'], ['added', 'Zuletzt hinzugefügt']],
+    'favorites-filter': [['all', 'Alle Filme'], ['unplayed', 'Ungesehen'], ['played', 'Gesehen'], ['resumable', 'Angefangen']],
+    'period-filter': [['all', 'Alle Jahre'], ['classic', 'Vor 1970'], ['1970', '1970er'], ['1980', '1980er'], ['1990', '1990er'], ['2000', '2000er'], ['2010', '2010er'], ['2020', '2020er']]
+  };
   var selectedGenres = [], draftGenres = [];
   var favoriteRequest = null;
   var detailRevision = 0;
@@ -69,12 +75,17 @@
   var searchActorId = '';
   var actorSeriesTotal = null, actorMovieCount = null;
   var searchMode = 'movies';
+  var discoverSearchOrigin = null;
   var seriesContext = null;
   var actorOrigin = null;
   var collectionId = '';
   var collectionName = '';
+  var collectionNext = null, collectionNextRequest = null, collectionNextFor = '';
   var collectionActorId = '', collectionActorName = '', collectionActorRequest = null, collectionActorTimer = null, collectionActorRevision = 0;
   var actorBrowseStart = 0, actorBrowseTotal = 0;
+  var actorPageSize = 6, actorLastIndex = 0, actorLetter = '';
+  var actorRankRequest = null, rankedActors = null;
+  var genreFocusIndex = 0;
   var suggestedCollection = null;
   var suggestedActor = null;
   var collectionOrigin = null;
@@ -174,7 +185,7 @@
   }
 
   function renderProfiles() {
-    var actions = document.querySelector('.profile-actions');
+    var actions = document.getElementById('profile-rows');
     var rows = actions.querySelectorAll('.profile-row');
     var active = jellyfin && typeof jellyfin.exportSession === 'function' ? jellyfin.exportSession() : null;
     var server = serverInput.value.trim().replace(/\/+$/, '');
@@ -550,14 +561,11 @@
     if (!element) { return; }
     if (focused !== element) { removeClass(focused, 'is-focused'); }
     focused = element;
-    if (page === 'start') {
-      var homeZone = element.getAttribute('data-zone') || '', homeOffset = 0, homeRail;
-      if (homeZone.indexOf('home-') === 0) { homeRail = document.getElementById(homeZone); if (homeRail && homeRail.parentNode) { homeOffset = Math.max(0, homeRail.parentNode.offsetTop - 460); } }
-      document.getElementById('home-library').style.webkitTransform = homeOffset ? 'translateY(-' + homeOffset + 'px)' : '';
-      document.getElementById('home-library').style.transform = homeOffset ? 'translateY(-' + homeOffset + 'px)' : '';
-    }
+    var homeLibrary = page === 'start' ? document.getElementById('home-library') : null;
+    var homeOffset = homeLibrary ? homeScrollOffset(homeLibrary, element) : 0;
     addClass(element, 'is-focused');
     element.focus();
+    if (homeLibrary && homeLibrary.scrollTop !== homeOffset) { homeLibrary.scrollTop = homeOffset; }
     // Hidden overflow can still be scrolled by focus, moving fixed TV dialogs off-screen.
     document.getElementById('app').scrollTop = 0;
     document.getElementById('app').scrollLeft = 0;
@@ -585,10 +593,10 @@
   function isMoviePage() { return page === 'filme' || page === 'entdecken' || page === 'sammlungen' || page === 'merkliste' || (page === 'suche' && !!searchActorId); }
 
   function requestMoviePage(start, limit, callback) {
-    if ((page === 'filme' || page === 'entdecken' || (page === 'sammlungen' && collectionId)) && (selectedGenres.length || collectionActorId)) { return jellyfin.filterMovies(start, limit, callback, { parentId: page === 'sammlungen' ? collectionId : '', actorId: collectionActorId, genreIds: selectedGenres, filter: page === 'entdecken' ? favoriteFilter : 'all', sort: page === 'entdecken' ? discoverSort : 'title' }); }
+    if (page === 'entdecken') { return jellyfin.filterMovies(start, limit, callback, { actorId: collectionActorId, genreIds: selectedGenres, filter: discoverStatus, sort: discoverSort, years: discoverYears() }); }
+    if ((page === 'filme' || (page === 'sammlungen' && collectionId)) && (selectedGenres.length || collectionActorId)) { return jellyfin.filterMovies(start, limit, callback, { parentId: page === 'sammlungen' ? collectionId : '', actorId: collectionActorId, genreIds: selectedGenres }); }
     if (page === 'sammlungen') { return collectionId ? jellyfin.collectionMovies(collectionId, start, limit, callback) : jellyfin.collections(start, limit, callback); }
     if (page === 'merkliste') { return jellyfin.favorites(start, limit, callback, favoriteFilter); }
-    if (page === 'entdecken') { return jellyfin.discoverMovies(start, limit, callback, favoriteFilter, genreIndex < 0 ? '' : genreItems[genreIndex].id, discoverSort); }
     if (page === 'suche' && searchActorId) { return jellyfin.actorMovies(searchActorId, start, limit, callback); }
     return jellyfin.movies(start, limit, callback);
   }
@@ -603,6 +611,9 @@
     if (modal === 'player') { stopPlayer(); }
     if (modal === 'detail') { closeDetail(); }
     else if (modal === 'connection') { closeConnection(); }
+    else if (modal === 'collection-actor') { closeCollectionActor(); }
+    else if (modal === 'genre-modal') { closeGenreFilter(); }
+    else if (modal === 'discover-options') { closeDiscoverOptions(); }
     endSession(); setPage('start');
     if (previewMode) { openConnection(); }
     else { showLogin(); loginStatus('Bitte erneut anmelden.'); startLoginQuick(); }
@@ -624,8 +635,10 @@
   }
 
   function currentNav() {
-    return document.querySelector('[data-page="' + page + '"]');
+    return document.querySelector('[data-page="' + navigationPage() + '"]');
   }
+
+  function navigationPage() { return page === 'suche' ? 'entdecken' : page; }
 
   function createCard(item, index, zone) {
     var card = document.createElement('button');
@@ -643,9 +656,9 @@
     kind.textContent = item.kind.toUpperCase();
     title.className = 'card-title';
     title.textContent = item.title;
-    if (item.kind !== 'Film') { poster.appendChild(kind); }
     card.appendChild(poster);
     card.appendChild(title);
+    if (item.kind !== 'Film') { card.appendChild(kind); }
     return card;
   }
 
@@ -657,12 +670,29 @@
     if (diagnostics) { diagnostics.record('cards-dom', diagnostics.now() - started, indexes.length); }
   }
 
-  function appendReleaseYear(poster, year) {
-    if (!year) { return; }
-    var badge = document.createElement('span');
-    badge.className = 'release-year';
-    badge.textContent = String(year);
-    poster.appendChild(badge);
+  function appendCardMetadata(card, item, showStatus) {
+    var label, track, progress;
+    if (item.year) {
+      label = document.createElement('span');
+      label.className = 'release-year';
+      label.textContent = String(item.year);
+      card.appendChild(label);
+    }
+    if (!showStatus) { return; }
+    if (item.isPlayed) {
+      label = document.createElement('span');
+      label.className = 'home-played';
+      label.textContent = 'Gesehen';
+      card.appendChild(label);
+    } else if (item.playedPercentage > 0) {
+      track = document.createElement('span');
+      track.className = 'card-progress';
+      progress = document.createElement('span');
+      progress.className = 'home-progress';
+      progress.style.width = Math.min(100, item.playedPercentage) + '%';
+      track.appendChild(progress);
+      card.appendChild(track);
+    }
   }
 
   function renderMovies(previewOnly, direction) {
@@ -708,11 +738,10 @@
         image.onerror = function () { if (this.parentNode) { this.parentNode.removeChild(this); } };
         poster.appendChild(image);
       }
-      if (item.isPlayed) { var playedMarker = document.createElement('span'); playedMarker.className = 'home-played'; playedMarker.textContent = 'Gesehen'; poster.appendChild(playedMarker); }
-      else if (item.playedPercentage > 0) { var progressMarker = document.createElement('span'); progressMarker.className = 'home-progress'; progressMarker.style.width = Math.min(100, item.playedPercentage) + '%'; poster.appendChild(progressMarker); }
       title = document.createElement('span'); title.className = 'card-title'; title.textContent = item.title;
-      appendReleaseYear(poster, item.year);
-      card.appendChild(poster); card.appendChild(title); (i < previousItems.length ? previous : (i < previousItems.length + movieItems.length ? row : preview)).appendChild(card);
+      card.appendChild(poster); card.appendChild(title);
+      appendCardMetadata(card, item, true);
+      (i < previousItems.length ? previous : (i < previousItems.length + movieItems.length ? row : preview)).appendChild(card);
     }
   }
 
@@ -886,8 +915,9 @@
           poster = document.createElement('span'); poster.className = 'poster';
           if (item.imageUrl) { image = document.createElement('img'); image.alt = ''; image.src = item.imageUrl; image.onerror = function () { this.style.display = 'none'; }; poster.appendChild(image); }
           title = document.createElement('span'); title.className = 'card-title'; title.textContent = searchMode === 'people' ? item.name : item.title;
-          appendReleaseYear(poster, item.year);
-          card.appendChild(poster); card.appendChild(title); container.appendChild(card);
+          card.appendChild(poster); card.appendChild(title);
+          appendCardMetadata(card, item, searchMode === 'movies');
+          container.appendChild(card);
         }
         if ((start || selectLast) && focused === focusBefore) { var cards = activeCards(); focusElement(cards[selectLast ? cards.length - 1 : 0] || searchInput); }
       });
@@ -919,10 +949,10 @@
         else { card.setAttribute('data-action', 'season-open'); card.setAttribute('data-season-id', item.id); card.setAttribute('data-season-name', item.title); }
         poster = document.createElement('span'); poster.className = 'poster';
         if (item.imageUrl) { image = document.createElement('img'); image.alt = ''; image.src = item.imageUrl; image.onerror = function () { this.style.display = 'none'; }; poster.appendChild(image); }
-        if (item.isPlayed) { var playedMarker = document.createElement('span'); playedMarker.className = 'home-played'; playedMarker.textContent = 'Gesehen'; poster.appendChild(playedMarker); }
-        else if (item.playedPercentage > 0) { var progressMarker = document.createElement('span'); progressMarker.className = 'home-progress'; progressMarker.style.width = Math.min(100, item.playedPercentage) + '%'; poster.appendChild(progressMarker); }
         title = document.createElement('span'); title.className = 'card-title'; title.textContent = item.title;
-        card.appendChild(poster); card.appendChild(title); container.appendChild(card);
+        card.appendChild(poster); card.appendChild(title);
+        appendCardMetadata(card, item, true);
+        container.appendChild(card);
       }
       if (focused === focusBefore && !modal) { cards = activeCards(); focusElement(cards[selectLast ? cards.length - 1 : 0] || document.getElementById('actor-back')); }
     });
@@ -1033,42 +1063,103 @@
 
   function closeCollectionActor() {
     cancelCollectionActorSearch();
+    if (actorRankRequest) { actorRankRequest.abort(); actorRankRequest = null; }
+    rankedActors = null;
     document.getElementById('collection-actor-modal').style.display = 'none';
     if (modal === 'collection-actor') { modal = ''; }
     focusElement(document.getElementById('collection-actor-filter'));
   }
 
-  function searchCollectionActors() {
-    var term = document.getElementById('collection-actor-search').value.replace(/^\s+|\s+$/g, '');
-    var list = document.getElementById('collection-actor-results'), status = document.getElementById('collection-actor-status'), revision;
-    cancelCollectionActorSearch(); list.textContent = '';
+  function actorPageButtons() {
+    document.getElementById('actor-prev').setAttribute('aria-disabled', actorBrowseStart === 0 ? 'true' : 'false');
+    document.getElementById('actor-next').setAttribute('aria-disabled', actorBrowseStart + actorPageSize >= actorBrowseTotal ? 'true' : 'false');
+  }
+
+  function actorLetters() {
+    var row = document.getElementById('actor-letters');
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var button, i;
+    if (!row.firstChild) {
+      for (i = -1; i < letters.length; i += 1) {
+        button = document.createElement('button');
+        button.type = 'button'; button.className = 'action-button action-secondary';
+        button.textContent = letters.charAt(i) || 'Alle';
+        button.setAttribute('data-action', 'actor-letter');
+        button.setAttribute('data-zone', 'collection-actor');
+        button.setAttribute('data-letter', letters.charAt(i));
+        row.appendChild(button);
+      }
+    }
+    for (i = 0; i < row.children.length; i += 1) {
+      button = row.children[i];
+      button.setAttribute('aria-pressed', button.getAttribute('data-letter') === actorLetter ? 'true' : 'false');
+    }
+    row.style.display = rankedActors ? 'block' : 'none';
+  }
+
+  function renderActorPage(list, items, initial) {
+    var oldIndex = indexOfNode(list.children, focused);
+    var i, person, button, portrait, copy, label, count;
+    list.textContent = '';
+    for (i = 0; i < items.length; i += 1) {
+      person = items[i];
+      button = document.createElement('button'); button.type = 'button'; button.className = 'actor-choice';
+      button.setAttribute('data-zone', 'collection-actor'); button.setAttribute('data-action', 'collection-actor-select');
+      button.setAttribute('data-actor-id', person.id); button.setAttribute('data-actor-name', person.name);
+      portrait = document.createElement('span'); portrait.className = 'actor-choice-portrait';
+      if (person.imageUrl) { portrait.style.backgroundImage = 'url("' + person.imageUrl.replace(/["\\\n\r]/g, '') + '"), url("assets/portrait.svg")'; }
+      copy = document.createElement('span'); copy.className = 'actor-choice-copy';
+      label = document.createElement('span'); label.className = 'actor-choice-name'; label.textContent = person.name;
+      button.appendChild(portrait); button.appendChild(copy); copy.appendChild(label);
+      if (person.count > 0) {
+        count = document.createElement('span'); count.className = 'actor-choice-count';
+        count.textContent = person.count + (person.count === 1 ? ' Film' : ' Filme');
+        copy.appendChild(count);
+      }
+      list.appendChild(button);
+    }
+    if (oldIndex >= 0) { focusElement(list.children[Math.min(oldIndex, items.length - 1)] || document.getElementById('collection-actor-search')); }
+    else if (initial && focused && focused.id === 'collection-actor-clear' && list.firstChild) { focusElement(list.firstChild); }
+  }
+
+  function searchCollectionActors(start, initial, reset) {
+    var term = document.getElementById('collection-actor-search').value.trim();
+    var list = document.getElementById('collection-actor-results');
+    var status = document.getElementById('collection-actor-status');
+    cancelCollectionActorSearch();
+    var revision = collectionActorRevision;
+    if (actorRankRequest) { return; }
+    if (reset) { actorBrowseStart = 0; actorBrowseTotal = 0; actorLastIndex = 0; actorPageButtons(); list.textContent = ''; }
     if (term.length > 200) { status.textContent = 'Name ist zu lang'; return; }
-    status.textContent = 'Suche …'; revision = collectionActorRevision;
+    function received(error, data) {
+      if (modal !== 'collection-actor' || revision !== collectionActorRevision) { return; }
+      collectionActorRequest = null;
+      if (error && error.type === 'unauthorized') { closeCollectionActor(); sessionExpired(); return; }
+      if (error || !data || !Array.isArray(data.items)) { status.textContent = 'Suche nicht verfügbar'; return; }
+      if (start > 0 && start >= data.total) { searchCollectionActors(0); return; }
+      actorBrowseStart = start;
+      actorBrowseTotal = data.total;
+      actorPageButtons();
+      var order = rankedActors ? 'Meiste Filme · ' : (page === 'entdecken' ? 'Filmzahl nicht verfügbar · ' : '');
+      status.textContent = data.items.length ? order + (start + 1) + '–' + (start + data.items.length) + ' von ' + data.total : 'Keine Schauspieler gefunden';
+      renderActorPage(list, data.items, initial);
+    }
+    if (rankedActors) {
+      var query = term.toLowerCase();
+      var matching = rankedActors.filter(function (person) {
+        var name = person.name.toLowerCase();
+        var first = name.charAt(0).replace('ä', 'a').replace('ö', 'o').replace('ü', 'u');
+        return (!actorLetter || first === actorLetter.toLowerCase()) && name.indexOf(query) !== -1;
+      });
+      received(null, { items: matching.slice(start, start + actorPageSize), total: matching.length });
+      return;
+    }
+    status.textContent = 'Suche …';
     collectionActorTimer = window.setTimeout(function () {
       collectionActorTimer = null;
       if (modal !== 'collection-actor' || revision !== collectionActorRevision || !isConnected()) { return; }
-      function received(error, data) {
-        var i, button, person;
-        if (modal !== 'collection-actor' || revision !== collectionActorRevision) { return; }
-        collectionActorRequest = null;
-        if (error && error.type === 'unauthorized') { closeCollectionActor(); sessionExpired(); return; }
-        if (error || !data || !Array.isArray(data.items)) { status.textContent = 'Suche nicht verfügbar'; return; }
-        actorBrowseTotal = data.total;
-        document.getElementById('actor-prev').style.display = actorBrowseStart > 0 ? 'inline-block' : 'none';
-        document.getElementById('actor-next').style.display = actorBrowseStart + data.items.length < actorBrowseTotal ? 'inline-block' : 'none';
-        status.textContent = data.items.length ? (actorBrowseTotal > 6 ? (actorBrowseStart + 1) + '–' + (actorBrowseStart + data.items.length) + ' / ' + actorBrowseTotal : '') : 'Keine Schauspieler gefunden';
-        for (i = 0; i < data.items.length; i += 1) {
-          person = data.items[i]; button = document.createElement('button'); button.type = 'button';
-          button.className = 'actor-choice'; button.setAttribute('data-zone', 'collection-actor'); button.setAttribute('data-action', 'collection-actor-select');
-          button.setAttribute('data-actor-id', person.id); button.setAttribute('data-actor-name', person.name); button.setAttribute('aria-label', person.name);
-          var portrait = document.createElement('span'), label = document.createElement('span');
-          portrait.className = 'actor-choice-portrait'; if (person.imageUrl) { portrait.style.backgroundImage = 'url("' + person.imageUrl.replace(/["\\\n\r]/g, '') + '"), url("assets/portrait.svg")'; }
-          label.className = 'actor-choice-name'; label.textContent = person.name; button.appendChild(portrait); button.appendChild(label); list.appendChild(button);
-        }
-        if (focused && (focused.id === 'actor-prev' || focused.id === 'actor-next' || focused.id === 'collection-actor-clear') && list.firstChild) { focusElement(list.firstChild); }
-      }
-      collectionActorRequest = term ? jellyfin.searchPeople(term, actorBrowseStart, 6, received) : jellyfin.browseActors(actorBrowseStart, 6, received);
-    }, term ? 300 : 0);
+      collectionActorRequest = term ? jellyfin.searchPeople(term, start, actorPageSize, received) : jellyfin.browseActors(start, actorPageSize, received);
+    }, term && start === 0 ? 300 : 0);
   }
 
   function openCollectionActor() {
@@ -1076,8 +1167,19 @@
     modal = 'collection-actor'; document.getElementById('collection-actor-modal').style.display = 'block';
     document.getElementById('collection-actor-search').value = '';
     document.getElementById('collection-actor-results').textContent = '';
-    document.getElementById('actor-prev').style.display = 'none'; document.getElementById('actor-next').style.display = 'none';
-    actorBrowseStart = 0; actorBrowseTotal = 0; focusElement(document.getElementById('collection-actor-clear')); searchCollectionActors();
+    actorBrowseStart = 0; actorBrowseTotal = 0; actorLastIndex = 0; actorLetter = ''; rankedActors = null;
+    actorPageButtons(); actorLetters();
+    focusElement(document.getElementById('collection-actor-clear'));
+    if (page !== 'entdecken') { searchCollectionActors(0, true); return; }
+    document.getElementById('collection-actor-status').textContent = 'Filmzahlen werden ermittelt …';
+    actorRankRequest = jellyfin.rankedMovieActors(function (error, people) {
+      actorRankRequest = null;
+      if (modal !== 'collection-actor') { return; }
+      if (error && error.type === 'unauthorized') { closeCollectionActor(); sessionExpired(); return; }
+      rankedActors = error ? null : people;
+      actorLetters();
+      searchCollectionActors(0, true);
+    });
   }
 
   function applyCollectionActor(id, name) {
@@ -1105,6 +1207,7 @@
   function openGenreFilter() {
     if (!isConnected() || !genreItems.length || modal) { return; }
     draftGenres = selectedGenres.slice(); modal = 'genre-modal'; document.getElementById('genre-modal').style.display = 'block'; renderGenreOptions();
+    genreFocusIndex = 0;
     focusElement(document.querySelector('#genre-results button') || document.getElementById('genre-apply'));
   }
   function closeGenreFilter() {
@@ -1115,6 +1218,53 @@
     abortMovies(); moviePages = []; movieItems = []; movieStart = 0; movieTotal = 0; movieNeedsRefresh = false;
     renderSection(); focusElement(element); loadMovies(0, false, true);
   }
+
+  function discoverYears() {
+    var years = [], first, last, year;
+    if (discoverPeriod === 'all') {
+      if (discoverSort !== 'oldest' && discoverSort !== 'newest') { return years; }
+      // Jellyfin sorts films with missing years first in ascending order.
+      first = 1880; last = 2099;
+    } else {
+      first = discoverPeriod === 'classic' ? 1880 : Number(discoverPeriod);
+      last = discoverPeriod === 'classic' ? 1969 : first + 9;
+    }
+    for (year = first; year <= last; year += 1) { years.push(year); }
+    return years;
+  }
+
+  function discoverChoiceLabel(id, value) {
+    var options = discoverChoices[id], i;
+    for (i = 0; i < options.length; i += 1) { if (options[i][0] === value) { return options[i][1]; } }
+    return options[0][1];
+  }
+
+  function openDiscoverOptions(trigger, selected) {
+    var options = discoverChoices[trigger.id], list = document.getElementById('discover-options-list');
+    var i, button, current, isSelected;
+    if (page !== 'entdecken' || modal || !isConnected()) { return; }
+    discoverOptionsTrigger = trigger;
+    document.getElementById('discover-options-title').textContent = trigger.getAttribute('data-caption');
+    while (list.firstChild) { list.removeChild(list.firstChild); }
+    for (i = 0; i < options.length; i += 1) {
+      button = document.createElement('button');
+      isSelected = options[i][0] === selected;
+      button.type = 'button'; button.className = 'discover-option';
+      button.setAttribute('data-zone', 'discover-options'); button.setAttribute('data-action', 'discover-option');
+      button.setAttribute('data-value', options[i][0]); button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      button.textContent = options[i][1]; list.appendChild(button);
+      if (isSelected) { current = button; }
+    }
+    modal = 'discover-options'; document.getElementById(modal).style.display = 'block';
+    focusElement(current || list.firstChild);
+  }
+
+  function closeDiscoverOptions() {
+    document.getElementById('discover-options').style.display = 'none'; modal = '';
+    focusElement(discoverOptionsTrigger); discoverOptionsTrigger = null;
+  }
+
+  function resetDiscoverOptions() { discoverSort = 'title'; discoverStatus = 'all'; discoverPeriod = 'all'; }
 
   function openCollection(id) {
     var i;
@@ -1141,36 +1291,106 @@
     focusElement(currentNav());
   }
 
+  function resetCollectionNext() {
+    if (collectionNextRequest) { collectionNextRequest.abort(); collectionNextRequest = null; }
+    collectionNextFor = '';
+    collectionNext = null;
+    var button = document.getElementById('collection-next');
+    button.style.display = 'none';
+    button.removeAttribute('data-movie-id');
+  }
+
+  function updateCollectionNext(force) {
+    var id = page === 'sammlungen' && isConnected() ? collectionId : '';
+    var header = document.getElementById('collection-heading');
+    var button = document.getElementById('collection-next');
+    header.style.display = id ? 'block' : 'none';
+    if (!id) { resetCollectionNext(); return; }
+    document.getElementById('collection-heading-title').textContent = collectionName;
+    if (!force && collectionNextFor === id) { return; }
+    if (collectionNextFor !== id) { resetCollectionNext(); }
+    if (collectionNextRequest) { collectionNextRequest.abort(); }
+    collectionNextFor = id;
+    var client = jellyfin;
+    var pending = client.filterMovies(0, 1, function (error, result) {
+      if (collectionNextRequest !== pending || page !== 'sammlungen' || collectionId !== id || jellyfin !== client) { return; }
+      collectionNextRequest = null;
+      if (error && error.type === 'unauthorized') { sessionExpired(); return; }
+      if (error) { collectionNextFor = ''; return; }
+      collectionNext = result.items[0] || null;
+      button.style.display = collectionNext ? 'inline-block' : 'none';
+      if (collectionNext) {
+        button.textContent = 'Nächster ungesehener Film · ' + collectionNext.title;
+        button.setAttribute('data-movie-id', collectionNext.id);
+      } else {
+        button.removeAttribute('data-movie-id');
+        if (!modal && focused === button) { focusElement(activeCards()[0] || currentNav()); }
+      }
+    }, { parentId: id, filter: 'unplayed' });
+    collectionNextRequest = pending;
+  }
+
+  function visibleCollectionNext() {
+    var button = document.getElementById('collection-next');
+    return page === 'sammlungen' && collectionId && isDisplayed(button) ? button : null;
+  }
+
+  function renderFilterValue(id, value, label, active) {
+    var button = document.getElementById(id);
+    button.textContent = value;
+    if (page === 'entdecken') { button.setAttribute('aria-label', label + ': ' + value); }
+    else { button.removeAttribute('aria-label'); }
+    if (page === 'entdecken' && active) { addClass(button, 'has-value'); }
+    else { removeClass(button, 'has-value'); }
+  }
+
+  function renderGenreFilter() {
+    var button = document.getElementById('genre-filter');
+    button.style.display = isConnected() && (page === 'entdecken' || (genreItems.length && (page === 'filme' || (page === 'sammlungen' && collectionId)))) ? 'inline-block' : 'none';
+    button.setAttribute('aria-disabled', genreItems.length ? 'false' : 'true');
+    renderFilterValue('genre-filter', genreLabel(), 'Genre', selectedGenres.length);
+  }
+
   function renderSection() {
     var data = pages[page];
     var indexes = sectionIndexes();
     var empty = document.getElementById('empty-state');
-    document.getElementById('library-filters').style.display = 'block';
+    var discover = page === 'entdecken';
+    var searching = page === 'suche' && !searchActorId && !seriesContext;
+    var filters = document.getElementById('library-filters');
+    filters.style.display = 'block';
+    filters.className = 'library-filters' + (discover ? ' is-discovery' : '');
+    document.getElementById('discover-search').style.display = discover ? 'inline-block' : 'none';
+    document.getElementById('discover-heading').style.display = discover || searching ? 'block' : 'none';
     document.getElementById('page-title').textContent = page === 'sammlungen' && collectionId ? collectionName : data.title;
     document.getElementById('actor-back').style.display = page === 'suche' && (searchActorId || seriesContext) ? 'inline-block' : 'none';
     document.getElementById('actor-back').textContent = seriesContext ? (seriesContext.seasonId ? 'Zurück zu Staffeln' : 'Zurück zur Suche') : 'Zurück zur Suche';
     document.getElementById('page-description').textContent = page === 'filme' ? '' : data.description;
     document.getElementById('section-title').textContent = page === 'filme' ? '' : data.heading;
     sectionView.className = isConnected() && isMoviePage() ? 'section-view is-movies' + (page === 'merkliste' || page === 'entdecken' || page === 'filme' || (page === 'sammlungen' && collectionId) ? ' has-filter' : '') : (page === 'entdecken' ? 'section-view is-discover' : 'section-view');
+    if (page === 'sammlungen' && collectionId) { sectionView.className += ' is-collection-page'; }
+    if (discover && isConnected()) { sectionView.className += ' is-discovery-browse'; }
+    if (searching) { sectionView.className += ' is-discovery-search'; }
+    updateCollectionNext(false);
     document.getElementById('person-hero').style.display = page === 'suche' && searchActorId ? 'block' : 'none';
     if (page === 'suche' && searchActorId) { sectionView.className += ' is-person-page'; }
     document.getElementById('favorites-filter').style.display = isConnected() && (page === 'merkliste' || page === 'entdecken') ? 'inline-block' : 'none';
-    document.getElementById('favorites-filter').textContent = favoriteFilter === 'unplayed' ? 'Nicht als gesehen markiert' : (favoriteFilter === 'played' ? 'Gesehen' : 'Alle Filme');
-    document.getElementById('genre-filter').style.display = isConnected() && (page === 'filme' || page === 'entdecken' || (page === 'sammlungen' && collectionId)) && genreItems.length ? 'inline-block' : 'none';
-    document.getElementById('genre-filter').textContent = genreLabel();
+    renderFilterValue('favorites-filter', discover ? discoverChoiceLabel('favorites-filter', discoverStatus) : (favoriteFilter === 'unplayed' ? 'Nicht als gesehen markiert' : (favoriteFilter === 'played' ? 'Gesehen' : 'Alle Filme')), 'Status', discoverStatus !== 'all');
+    renderGenreFilter();
     document.getElementById('sort-filter').style.display = isConnected() && page === 'entdecken' ? 'inline-block' : 'none';
-    document.getElementById('sort-filter').textContent = discoverSort === 'added' ? 'Zuletzt hinzugefügt' : (discoverSort === 'year' ? 'Erscheinungsdatum' : 'Titel A–Z');
+    renderFilterValue('sort-filter', discoverChoiceLabel('sort-filter', discoverSort), 'Sortierung', discoverSort !== 'title');
+    document.getElementById('period-filter').style.display = isConnected() && discover ? 'inline-block' : 'none';
+    renderFilterValue('period-filter', discoverChoiceLabel('period-filter', discoverPeriod), 'Zeitraum', discoverPeriod !== 'all');
     document.getElementById('collection-actor-filter').style.display = isConnected() && (page === 'filme' || page === 'entdecken' || (page === 'sammlungen' && collectionId)) ? 'inline-block' : 'none';
-    document.getElementById('collection-actor-filter').textContent = 'Schauspieler: ' + (collectionActorName || 'Alle');
-    document.getElementById('filter-reset').style.display = isConnected() && (page === 'filme' || page === 'entdecken' || (page === 'sammlungen' && collectionId)) && (selectedGenres.length || collectionActorId) ? 'inline-block' : 'none';
-    document.getElementById('search-wrap').style.display = page === 'suche' ? 'block' : 'none';
-    document.getElementById('search-mode').style.display = isConnected() && page === 'suche' && !searchActorId ? 'block' : 'none';
-    document.getElementById('series-search').style.display = seriesEnabled() && isConnected() && page === 'suche' && !searchActorId && !seriesContext ? 'block' : 'none';
+    renderFilterValue('collection-actor-filter', (discover ? '' : 'Schauspieler: ') + (collectionActorName || 'Alle'), 'Schauspieler', collectionActorId);
+    document.getElementById('filter-reset').style.display = isConnected() && (page === 'filme' || discover || (page === 'sammlungen' && collectionId)) && (selectedGenres.length || collectionActorId || (discover && (discoverStatus !== 'all' || discoverSort !== 'title' || discoverPeriod !== 'all'))) ? 'inline-block' : 'none';
+    document.getElementById('search-wrap').style.display = searching ? 'block' : 'none';
+    document.getElementById('search-mode').style.display = isConnected() && searching ? 'inline-block' : 'none';
+    document.getElementById('series-search').style.display = seriesEnabled() && isConnected() && searching ? 'inline-block' : 'none';
     document.getElementById('search-mode').textContent = searchMode === 'people' ? 'Schauspieler' : 'Filme';
     document.getElementById('series-search').setAttribute('aria-pressed', searchMode === 'series' ? 'true' : 'false');
     document.getElementById('people-section').style.display = page === 'entdecken' ? 'block' : 'none';
     if (isConnected()) {
-      document.getElementById('search-wrap').style.display = page === 'suche' && !searchActorId && !seriesContext ? 'block' : 'none';
       document.getElementById('people-section').style.display = 'none';
       if (page === 'suche' && seriesContext) {
         document.getElementById('section-cards').className = 'cards';
@@ -1195,6 +1415,7 @@
       }
       return;
     }
+    if (searching) { searchInput.placeholder = 'Beispieltitel suchen'; searchInput.setAttribute('aria-label', searchInput.placeholder); }
     document.getElementById('section-cards').className = 'cards';
     document.getElementById('section-cards').setAttribute('aria-label', 'Beispieltitel');
     renderCards(document.getElementById('section-cards'), indexes);
@@ -1214,7 +1435,7 @@
   function loadGenres() {
     var revision = ++genreRevision;
     if (genreRequest) { genreRequest.abort(); genreRequest = null; }
-    genreItems = []; genreIndex = -1;
+    genreItems = [];
     if (!jellyfin || typeof jellyfin.genres !== 'function') { return; }
     genreRequest = jellyfin.genres(function (error, result) {
       if (revision !== genreRevision || (page !== 'filme' && page !== 'entdecken' && page !== 'sammlungen')) { return; }
@@ -1222,8 +1443,7 @@
       if (error && error.type === 'unauthorized') { sessionExpired(); return; }
       if (!error && result && result.items) {
         genreItems = result.items;
-        document.getElementById('genre-filter').style.display = genreItems.length && (page === 'filme' || page === 'entdecken' || (page === 'sammlungen' && collectionId)) ? 'inline-block' : 'none';
-        document.getElementById('genre-filter').textContent = genreLabel();
+        renderGenreFilter();
       }
     });
   }
@@ -1232,18 +1452,39 @@
     return document.getElementById('home-' + rail.id).querySelectorAll('[data-zone="home-' + rail.id + '"]');
   }
 
+  function homeScrollOffset(library, element) {
+    var rail = document.getElementById(element.getAttribute('data-zone') || '');
+    if (!rail || !library.contains(rail) || !rail.contains(element)) { return 0; }
+    var first = firstHomeMovie();
+    var section = rail.parentNode;
+    var top = section.offsetTop;
+    var bottom = top + section.offsetHeight;
+    if (first && rail.contains(first) && bottom <= library.clientHeight) { return 0; }
+    return Math.min(top, Math.max(library.scrollTop, bottom - library.clientHeight));
+  }
+
+  function latestCardTitle(item) {
+    var title = item.title;
+    var release = /[ ._-]+(?:480p|720p|1080[pi]|2160p|[xh][ ._-]?26[45]|hevc|web[ ._-]?(?:dl|rip)|blu[ ._-]?ray|bdrip)(?:[ ._-]+(?:480p|720p|1080[pi]|2160p|[xh][ ._-]?26[45]|hevc|web|dl|web[ ._-]?(?:dl|rip)|blu[ ._-]?ray|bdrip|aac|ac3|dts|remux|german|english|multi|dual))*(?:-[a-z][a-z0-9]{1,15})?$/i.exec(title);
+    if (!release) { return title; }
+    var shortTitle = title.substring(0, release.index).replace(/(?:[ ._-]+(?:german|english|dl|dual|multi|aac|ac3|dts))+$/i, '');
+    if (item.year) { shortTitle = shortTitle.replace(new RegExp('[ ._-]+' + item.year + '$'), ''); }
+    return shortTitle || title;
+  }
+
   function renderHomeRail(rail) {
     var container = document.getElementById('home-' + rail.id);
-    var i, item, card, poster, image, title, marker;
+    var i, item, card, poster, image, title;
     while (container.firstChild) { container.removeChild(container.firstChild); }
     for (i = 0; i < rail.items.length; i += 1) {
       item = rail.items[i]; card = document.createElement('button'); card.type = 'button'; card.className = 'media-card';
       card.setAttribute('data-zone', 'home-' + rail.id); card.setAttribute('data-action', 'movie-detail'); card.setAttribute('data-movie-id', item.id); card.setAttribute('aria-label', item.title);
       poster = document.createElement('span'); poster.className = 'poster';
       if (item.imageUrl) { image = document.createElement('img'); image.alt = ''; image.src = item.imageUrl; image.onerror = function () { if (this.parentNode) { this.parentNode.removeChild(this); } }; poster.appendChild(image); }
-      if (rail.id === 'resume' && item.playedPercentage > 0) { marker = document.createElement('span'); marker.className = 'home-progress'; marker.style.width = Math.min(100, item.playedPercentage) + '%'; poster.appendChild(marker); }
-      if (rail.id === 'recent' && item.isPlayed) { marker = document.createElement('span'); marker.className = 'home-played'; marker.textContent = 'Gesehen'; poster.appendChild(marker); }
-      title = document.createElement('span'); title.className = 'card-title'; title.textContent = item.title; appendReleaseYear(poster, item.year); card.appendChild(poster); card.appendChild(title); container.appendChild(card);
+      title = document.createElement('span'); title.className = 'card-title'; title.textContent = rail.id === 'latest' ? latestCardTitle(item) : item.title;
+      card.appendChild(poster); card.appendChild(title);
+      appendCardMetadata(card, item, rail.id === 'resume');
+      container.appendChild(card);
     }
   }
 
@@ -1402,7 +1643,9 @@
     document.getElementById('brand-avatar').textContent = name ? name.charAt(0).toUpperCase() : 'S';
   }
 
-  function firstHomeCard() { return (suggestedCollection && document.getElementById('home-collection')) || (suggestedActor && document.getElementById('home-actor')) || homeCards(homeRails[0])[0] || homeCards(homeRails[1])[0] || homeCards(homeRails[2])[0] || document.getElementById('profile-button'); }
+  function firstHomeMovie() { return homeCards(homeRails[0])[0] || homeCards(homeRails[1])[0] || homeCards(homeRails[2])[0]; }
+
+  function firstHomeCard() { return firstHomeMovie() || (suggestedCollection && document.getElementById('home-collection')) || (suggestedActor && document.getElementById('home-actor')) || document.getElementById('profile-button'); }
 
   function refreshHome() {
     var i, zone, cards;
@@ -1415,17 +1658,31 @@
     }
   }
 
-  function setPage(nextPage) {
+  function openDiscoverSearch() {
+    discoverSearchOrigin = { genres: selectedGenres.slice(), actorId: collectionActorId, actorName: collectionActorName };
+    searchMode = 'movies'; peopleStart = 0; peopleTotal = 0;
+    setPage('suche');
+    focusElement(searchInput);
+  }
+
+  function closeDiscoverSearch() {
+    setPage('entdecken', discoverSearchOrigin);
+    focusElement(document.getElementById('discover-search'));
+  }
+
+  function setPage(nextPage, discoverFilters) {
     var nav = nodesForZone('nav');
     var started = diagnostics ? diagnostics.now() : 0;
     var activeIndex = 0;
     var indicator = document.getElementById('nav-indicator');
     var i;
-    if (nextPage === page) { focusElement(currentNav()); if (isConnected() && isMoviePage()) { abortMovies(); loadMovies(0, false, true); } else if (isConnected() && page === 'start') { loadHome(); } return; }
+    if (nextPage === page) { focusElement(currentNav()); if (isConnected() && isMoviePage()) { abortMovies(); loadMovies(0, false, true); if (collectionId) { updateCollectionNext(true); } } else if (isConnected() && page === 'start') { loadHome(); } return; }
     if (request) { cancelRequest('Verbindung abgebrochen.'); }
+    if (nextPage !== 'suche') { discoverSearchOrigin = null; }
     if (page === 'suche' && searchActorId && nextPage !== 'suche') { actorOrigin = null; }
     abortPeople();
     abortMovies();
+    resetCollectionNext();
     abortHome();
     genreRevision += 1;
     if (genreRequest) { genreRequest.abort(); genreRequest = null; }
@@ -1433,19 +1690,27 @@
     document.getElementById('actor-back').style.display = 'none';
     page = nextPage;
     selectedGenres = []; draftGenres = []; collectionActorId = ''; collectionActorName = '';
+    if (page === 'entdecken' && discoverFilters) {
+      selectedGenres = discoverFilters.genres;
+      collectionActorId = discoverFilters.actorId;
+      collectionActorName = discoverFilters.actorName;
+    }
     if ((page === 'filme' || page === 'entdecken' || page === 'sammlungen') && isConnected()) { loadGenres(); }
     searchInput.value = '';
     for (i = 0; i < nav.length; i += 1) {
       removeClass(nav[i], 'is-active');
       nav[i].removeAttribute('aria-current');
-      if (nav[i].getAttribute('data-page') === page) {
+      if (nav[i].getAttribute('data-page') === navigationPage()) {
         activeIndex = i;
         addClass(nav[i], 'is-active');
         nav[i].setAttribute('aria-current', 'page');
       }
     }
     homeView.style.display = page === 'start' ? 'block' : 'none';
-    if (page === 'start') { document.getElementById('library-filters').style.display = 'none'; }
+    if (page === 'start') {
+      document.getElementById('library-filters').style.display = 'none';
+      document.getElementById('discover-heading').style.display = 'none';
+    }
     sectionView.style.display = page === 'start' ? 'none' : 'block';
     indicator.style.webkitTransform = 'translateY(' + (activeIndex * 72) + 'px)';
     indicator.style.transform = 'translateY(' + (activeIndex * 72) + 'px)';
@@ -1563,7 +1828,7 @@
     document.getElementById('connection-title').textContent = 'Wer schaut gerade?';
     document.getElementById('profile-name').textContent = document.getElementById('auth-user').value || 'Melde dich bei deiner Mediathek an.';
     renderProfiles();
-    focusElement(document.querySelector('.profile-row[aria-current]') || document.querySelector('.profile-row') || document.getElementById(isConnected() ? 'auth-logout' : 'auth-open'));
+    focusElement(document.querySelector('.profile-row[aria-current]') || document.querySelector('.profile-row') || document.getElementById(isConnected() ? 'settings-open' : 'auth-open'));
     if (!isConnected()) { restoreSavedSession(); }
   }
 
@@ -1623,6 +1888,7 @@
 
   function endSession(keepProfile) {
     cancelProfileSwitch();
+    resetDiscoverOptions();
     if(clipCreateRequest){clipCreateRequest.abort();clipCreateRequest=null;}if(clipRequest){clipRequest.abort();clipRequest=null;}
     if(clipJobTimer!==null){window.clearTimeout(clipJobTimer);clipJobTimer=null;}if(clipJobRequest){clipJobRequest.abort();clipJobRequest=null;}clipJobItem='';clipJobId='';
     cancelRestore(); if (!keepProfile) { clearStoredSession(); }
@@ -1637,6 +1903,7 @@
     cancelDetailRequests();
     actorOrigin = null; castRestoreId = ''; favoriteListDirty = false;
     abortMovies();
+    resetCollectionNext();
     closeAuth();
     if (jellyfin && !keepProfile) {
       var active = typeof jellyfin.exportSession === 'function' ? jellyfin.exportSession() : null;
@@ -1961,6 +2228,7 @@
     for (i = 0; i < movieItems.length; i += 1) { if (movieItems[i].id === id) { item = movieItems[i]; break; } }
     if (page === 'start') { for (h = 0; h < homeRails.length && !item; h += 1) { for (i = 0; i < homeRails[h].items.length; i += 1) { if (homeRails[h].items[i].id === id) { item = homeRails[h].items[i]; break; } } } }
     if (!item && phoneMovie && phoneMovie.id === id) { item = phoneMovie; }
+    if (!item && visibleCollectionNext() && collectionNext && collectionNext.id === id) { item = collectionNext; }
     if (!item) { return; }
     cancelDetailRequests(); returnFocus = focused; activeMovieId = id; modal = 'detail';
     document.getElementById('detail-copy').className = 'detail-copy is-person';
@@ -2418,7 +2686,11 @@
     entry.client.reportPlayback(entry.kind, entry.info, entry.position, entry.paused, function (error) {
       if (revision !== playerReportRevision) { return; }
       playerReportInFlight = false;
-      if (!error && entry.kind === 'stopped' && entry.client === jellyfin) { homeDirty = true; if (page === 'start' && !modal) { refreshHome(); } }
+      if (!error && entry.kind === 'stopped' && entry.client === jellyfin) {
+        homeDirty = true;
+        if (page === 'start' && !modal) { refreshHome(); }
+        if (page === 'sammlungen' && collectionId) { updateCollectionNext(true); }
+      }
       sendPlayerReports();
     });
   }
@@ -2552,6 +2824,7 @@
     setDetailImages('', '');
     modal = '';
     if (page === 'start' && homeDirty) { focusElement(returnFocus || currentNav()); refreshHome(); return; }
+    if (returnFocus && returnFocus === visibleCollectionNext()) { focusElement(returnFocus); return; }
     if (isConnected() && isMoviePage()) {
       cards = activeCards();
       for (i = 0; i < cards.length; i += 1) {
@@ -2579,6 +2852,7 @@
     else if (action === 'login-server') { if (loginBusy) { return; } document.getElementById('login-server-input').value = serverInput.value; document.getElementById('login-server-box').style.display = 'block'; focusElement(document.getElementById('login-server-input')); }
     else if (action === 'login-server-save') { saveLoginServer(); }
     else if (action === 'login-qr-retry') { startLoginQuick(); }
+    else if (targetPage === 'entdecken' && page === 'suche' && !searchActorId && !seriesContext) { closeDiscoverSearch(); }
     else if (targetPage) { setPage(targetPage); }
     else if (action === 'connection') { openConnection(); }
     else if (action === 'close-connection') { closeConnection(); }
@@ -2627,18 +2901,47 @@
     else if (action === 'collection-actor-close') { closeCollectionActor(); }
     else if (action === 'collection-actor-clear') { applyCollectionActor('', ''); }
     else if (action === 'collection-actor-select') { applyCollectionActor(element.getAttribute('data-actor-id'), element.getAttribute('data-actor-name')); }
-    else if (action === 'actor-next' || action === 'actor-prev') { actorBrowseStart = Math.max(0, actorBrowseStart + (action === 'actor-next' ? 6 : -6)); searchCollectionActors(); }
-    else if (action === 'favorites-filter' || action === 'genre-filter' || action === 'sort-filter') {
-      if (action === 'genre-filter') { openGenreFilter(); return; }
-      if (action === 'favorites-filter') { favoriteFilter = favoriteFilter === 'all' ? 'unplayed' : (favoriteFilter === 'unplayed' ? 'played' : 'all'); }
-      else { discoverSort = discoverSort === 'title' ? 'added' : (discoverSort === 'added' ? 'year' : 'title'); }
-      abortMovies(); moviePages = []; movieItems = []; movieStart = 0; movieTotal = 0; movieNeedsRefresh = false; renderSection(); loadMovies(0, false, true); focusElement(element);
+    else if (action === 'actor-next' || action === 'actor-prev') {
+      if (!collectionActorRequest && collectionActorTimer === null && element.getAttribute('aria-disabled') !== 'true') {
+        searchCollectionActors(actorBrowseStart + (action === 'actor-next' ? actorPageSize : -actorPageSize));
+      }
+    }
+    else if (action === 'actor-letter') {
+      actorLetter = element.getAttribute('data-letter');
+      actorLetters();
+      searchCollectionActors(0, false, true);
+    }
+    else if (action === 'genre-filter') { openGenreFilter(); }
+    else if (action === 'sort-filter') { openDiscoverOptions(element, discoverSort); }
+    else if (action === 'period-filter') { openDiscoverOptions(element, discoverPeriod); }
+    else if (action === 'favorites-filter') {
+      if (page === 'entdecken') { openDiscoverOptions(element, discoverStatus); }
+      else {
+        favoriteFilter = favoriteFilter === 'all' ? 'unplayed' : (favoriteFilter === 'unplayed' ? 'played' : 'all');
+        refreshFilteredMovies(element);
+      }
+    }
+    else if (action === 'discover-options-close') { closeDiscoverOptions(); }
+    else if (action === 'discover-option' && discoverOptionsTrigger) {
+      var trigger = discoverOptionsTrigger, value = element.getAttribute('data-value');
+      var changed = element.getAttribute('aria-pressed') !== 'true';
+      if (trigger.id === 'sort-filter') { discoverSort = value; }
+      else if (trigger.id === 'period-filter') { discoverPeriod = value; }
+      else { discoverStatus = value; }
+      closeDiscoverOptions();
+      if (changed) { refreshFilteredMovies(trigger); }
     }
     else if (action === 'genre-toggle') { var genreId = element.getAttribute('data-genre-id'), genreAt = draftGenres.indexOf(genreId); if (genreAt >= 0) { draftGenres.splice(genreAt, 1); } else if (draftGenres.length < 20) { draftGenres.push(genreId); } var genrePosition = indexOfNode(document.querySelectorAll('#genre-results button'), element); renderGenreOptions(); focusElement(document.querySelectorAll('#genre-results button')[genrePosition]); }
     else if (action === 'genre-clear') { draftGenres = []; renderGenreOptions(); focusElement(element); }
     else if (action === 'genre-close') { closeGenreFilter(); }
     else if (action === 'genre-apply') { selectedGenres = draftGenres.slice(); closeGenreFilter(); refreshFilteredMovies(document.getElementById('genre-filter')); }
-    else if (action === 'filter-reset') { selectedGenres = []; collectionActorId = ''; collectionActorName = ''; refreshFilteredMovies(document.getElementById('genre-filter').style.display !== 'none' ? document.getElementById('genre-filter') : document.getElementById('collection-actor-filter')); }
+    else if (action === 'filter-reset') {
+      selectedGenres = []; collectionActorId = ''; collectionActorName = '';
+      if (page === 'entdecken') { resetDiscoverOptions(); }
+      refreshFilteredMovies(document.getElementById(page === 'entdecken' ? 'favorites-filter' : (genreItems.length ? 'genre-filter' : 'collection-actor-filter')));
+    }
+    else if (action === 'discover-search') { openDiscoverSearch(); }
+    else if (action === 'discover-search-close') { closeDiscoverSearch(); }
     else if (action === 'search-mode' || action === 'series-search') { if (action === 'series-search' && !seriesEnabled()) { return; } searchMode = action === 'series-search' ? 'series' : (searchMode === 'movies' ? 'people' : 'movies'); peopleStart = 0; peopleTotal = 0; renderSection(); focusElement(element); }
     else if (action === 'series-open') { seriesContext = { seriesId: element.getAttribute('data-series-id'), seriesName: element.getAttribute('data-series-name'), seasonId: '', seasonName: '', seasonStart: 0 }; abortPeople(); renderSection(); loadSeriesChildren(0, false); }
     else if (action === 'season-open' && seriesContext) { seriesContext.seasonStart = peopleStart; seriesContext.seasonId = element.getAttribute('data-season-id'); seriesContext.seasonName = element.getAttribute('data-season-name'); renderSection(); loadSeriesChildren(0, false); }
@@ -2754,26 +3057,64 @@
     var index;
     if (modal) {
       zone = modal;
+      if (modal === 'discover-options') {
+        if (key === 38 || key === 40) { moveWithin(modal, key === 38 ? -1 : 1); }
+        return true;
+      }
+      if (modal === 'genre-modal') {
+        var genres = document.querySelectorAll('#genre-results button');
+        var genreIndex = indexOfNode(genres, focused);
+        var genreActions = document.querySelectorAll('#genre-actions button');
+        var genreActionIndex = indexOfNode(genreActions, focused);
+        if (genreIndex >= 0) {
+          if (key === 39) { genreFocusIndex = genreIndex; focusElement(genreActions[0]); }
+          else if (key === 38 || key === 40) { focusElement(genres[Math.max(0, Math.min(genres.length - 1, genreIndex + (key === 40 ? 1 : -1)))]); }
+        } else if (genreActionIndex >= 0) {
+          if (key === 37) { focusElement(genres[genreFocusIndex] || genres[0]); }
+          else if (key === 38 || key === 40) { focusElement(genreActions[Math.max(0, Math.min(genreActions.length - 1, genreActionIndex + (key === 40 ? 1 : -1)))]); }
+        }
+        return true;
+      }
       if (modal === 'collection-actor') {
         var actors = document.querySelectorAll('#collection-actor-results [data-action="collection-actor-select"]');
-        var actorIndex = indexOfNode(actors, focused), actorActions = [], actorButtons = document.querySelectorAll('#collection-actor-modal .modal-actions button'), actorActionIndex, ai;
-        for (ai = 0; ai < actorButtons.length; ai += 1) { if (isDisplayed(actorButtons[ai])) { actorActions.push(actorButtons[ai]); } }
-        actorActionIndex = indexOfNode(actorActions, focused);
-        if (focused === document.getElementById('collection-actor-search')) { if (key === 40) { focusElement(actors[0] || actorActions[0]); return true; } if (key === 38) { return true; } return false; }
+        var actorIndex = indexOfNode(actors, focused);
+        var actorActions = document.querySelectorAll('.actor-footer button');
+        var actorActionIndex = indexOfNode(actorActions, focused);
+        var letters = document.getElementById('actor-letters');
+        var actorInput = document.getElementById('collection-actor-search');
+        var letterIndex = indexOfNode(letters.children, focused);
+        var activeLetter = rankedActors ? letters.querySelector('[aria-pressed="true"]') : null;
+        if (focused === actorInput) {
+          if (key === 40) { focusElement(activeLetter || actors[0] || actorActions[2]); return true; }
+          return key === 38;
+        }
+        if (letterIndex >= 0) {
+          if (key === 37 || key === 39) { focusElement(letters.children[(letterIndex + letters.children.length + (key === 39 ? 1 : -1)) % letters.children.length]); }
+          else if (key === 38) { focusElement(actorInput); }
+          else if (key === 40) { focusElement(actors[0] || actorActions[2]); }
+          return true;
+        }
         if (actorIndex >= 0) {
           if (key === 37 && actorIndex % 3 > 0) { focusElement(actors[actorIndex - 1]); }
           else if (key === 39 && actorIndex % 3 < 2 && actorIndex + 1 < actors.length) { focusElement(actors[actorIndex + 1]); }
-          else if (key === 38) { focusElement(actorIndex >= 3 ? actors[actorIndex - 3] : document.getElementById('collection-actor-search')); }
-          else if (key === 40) { focusElement(actorIndex + 3 < actors.length ? actors[actorIndex + 3] : actorActions[0]); }
+          else if (key === 38) { focusElement(actorIndex >= 3 ? actors[actorIndex - 3] : (activeLetter || actorInput)); }
+          else if (key === 40) {
+            if (actorIndex < 3 && actors.length > 3) { focusElement(actors[Math.min(actorIndex + 3, actors.length - 1)]); }
+            else {
+              actorLastIndex = actorIndex;
+              focusElement(actorActions[1].getAttribute('aria-disabled') !== 'true' ? actorActions[1] :
+                (actorActions[0].getAttribute('aria-disabled') !== 'true' ? actorActions[0] : actorActions[2]));
+            }
+          }
           return true;
         }
         if (actorActionIndex >= 0) {
           if (key === 37 || key === 39) { focusElement(actorActions[Math.max(0, Math.min(actorActions.length - 1, actorActionIndex + (key === 39 ? 1 : -1)))]); }
-          else if (key === 38) { focusElement(actors[Math.max(0, actors.length - 3)] || document.getElementById('collection-actor-search')); }
+          else if (key === 38) { focusElement(actors[Math.min(actorLastIndex, actors.length - 1)] || activeLetter || actorInput); }
           return true;
         }
       }
-      if (modal === 'connection' && document.getElementById('profile-main').style.display !== 'none' && focused && focused.parentNode === document.querySelector('.profile-actions')) {
+      if (modal === 'connection' && document.getElementById('profile-main').style.display !== 'none' && focused && document.querySelector('.profile-actions').contains(focused)) {
         var profileButtons = document.querySelectorAll('.profile-actions [data-zone="connection"]');
         var visibleButtons = [], profileIndex, destination, profileButtonIndex;
         for (profileButtonIndex = 0; profileButtonIndex < profileButtons.length; profileButtonIndex += 1) { if (isDisplayed(profileButtons[profileButtonIndex])) { visibleButtons.push(profileButtons[profileButtonIndex]); } }
@@ -2832,7 +3173,8 @@
       if (key === 38 && focused && focused.getAttribute('data-page') === 'start') { focusElement(document.getElementById('profile-button')); }
       else if (key === 38) { moveWithin('nav', -1); }
       else if (key === 40) { moveWithin('nav', 1); }
-      else if (key === 39) { focusElement(page === 'start' ? (isConnected() ? firstHomeCard() : nodesForZone('hero')[0]) : (seriesContext ? (activeCards()[0] || document.getElementById('actor-back')) : (page === 'suche' && !searchActorId ? searchInput : ((page === 'merkliste' || page === 'entdecken') && isConnected() ? document.getElementById('favorites-filter') : (activeCards()[0] || (page === 'sammlungen' && collectionId && isConnected() ? document.getElementById('collection-actor-filter') : document.getElementById('profile-button'))))))); }
+      else if (key === 39 && page === 'entdecken') { focusElement(document.getElementById('discover-search')); }
+      else if (key === 39) { focusElement(page === 'start' ? (isConnected() ? firstHomeCard() : nodesForZone('hero')[0]) : (seriesContext ? (activeCards()[0] || document.getElementById('actor-back')) : (page === 'suche' && !searchActorId ? searchInput : (page === 'merkliste' && isConnected() ? document.getElementById('favorites-filter') : (activeCards()[0] || (page === 'sammlungen' && collectionId && isConnected() ? document.getElementById('collection-actor-filter') : document.getElementById('profile-button'))))))); }
     } else if (zone === 'profile') {
       if (key === 37) { var topFilters = nodesForZone('favorites-filter'); focusElement(focused.id === 'profile-button' && topFilters.length ? topFilters[topFilters.length - 1] : (focused.id === 'profile-button' && (searchActorId || seriesContext) ? document.getElementById('actor-back') : currentNav())); }
       else if (key === 39 && focused.id === 'actor-back') { focusElement(document.getElementById('profile-button')); }
@@ -2875,7 +3217,7 @@
         else { focusElement(cards[Math.min(index + 1, cards.length - 1)]); }
       }
       else if (key === 38 && isConnected() && isMoviePage() && movieStart > 0 && !movieNeedsRefresh) { loadMovies(Math.max(0, movieStart - 5), index); }
-      else if (key === 38) { var cardFilters = nodesForZone('favorites-filter'); focusElement(page === 'start' ? nodesForZone('hero')[0] : (seriesContext ? document.getElementById('actor-back') : (page === 'suche' && !searchActorId ? searchInput : (searchActorId ? document.getElementById('actor-back') : (cardFilters.length ? cardFilters[0] : document.getElementById('profile-button')))))); }
+      else if (key === 38) { var cardFilters = nodesForZone('favorites-filter'); focusElement(visibleCollectionNext() || (page === 'start' ? nodesForZone('hero')[0] : (seriesContext ? document.getElementById('actor-back') : (page === 'suche' && !searchActorId ? searchInput : (searchActorId ? document.getElementById('actor-back') : (cardFilters.length ? cardFilters[0] : document.getElementById('profile-button'))))))); }
       else if (key === 40 && isConnected() && isMoviePage() && movieStart + movieItems.length < movieTotal && !movieNeedsRefresh) { loadMovies(movieStart + 5, index); }
       else if (key === 40 && page === 'entdecken') { focusElement(nodesForZone('people')[0]); }
     } else if (zone === 'people') {
@@ -2884,14 +3226,18 @@
       else if (key === 39) { moveWithin('people', 1); }
       else if (key === 38) { focusElement(activeCards()[0]); }
     } else if (zone === 'search') {
-      if (key === 39 && isConnected()) {
+      if (key === 39) {
         try {
           if (typeof searchInput.selectionStart === 'number' && typeof searchInput.selectionEnd === 'number' && searchInput.selectionStart < searchInput.value.length) { return false; }
         } catch (ignoreSelection) {}
-        focusElement(document.getElementById('search-mode'));
+        focusElement(nodesForZone('search-mode')[0]);
       }
-      else if (key === 37 || key === 39) { return false; }
+      else if (key === 37) { return false; }
       if (key === 38) { focusElement(document.getElementById('profile-button')); }
+      else if (key === 40) { focusElement(activeCards()[0] || currentNav()); }
+    } else if (zone === 'collection-next') {
+      if (key === 37) { focusElement(currentNav()); }
+      else if (key === 38) { focusElement(nodesForZone('favorites-filter')[0] || document.getElementById('profile-button')); }
       else if (key === 40) { focusElement(activeCards()[0] || currentNav()); }
     } else if (zone === 'favorites-filter') {
       if (key === 37 && indexOfNode(nodesForZone('favorites-filter'), focused) === 0) { focusElement(currentNav()); }
@@ -2899,11 +3245,11 @@
       else if (key === 39 && indexOfNode(nodesForZone('favorites-filter'), focused) === nodesForZone('favorites-filter').length - 1) { focusElement(document.getElementById('profile-button')); }
       else if (key === 39) { moveWithin('favorites-filter', 1); }
       else if (key === 38) { focusElement(document.getElementById('profile-button')); }
-      else if (key === 40) { focusElement(activeCards()[0] || currentNav()); }
+      else if (key === 40) { focusElement(visibleCollectionNext() || activeCards()[0] || currentNav()); }
     } else if (zone === 'search-mode') {
-      if (key === 37 && focused.id === 'series-search') { focusElement(document.getElementById('search-mode')); }
-      else if (key === 37) { focusElement(searchInput); }
-      else if (key === 39 && focused.id === 'search-mode' && seriesEnabled()) { focusElement(document.getElementById('series-search')); }
+      if (key === 37 && indexOfNode(nodesForZone('search-mode'), focused) === 0) { focusElement(searchInput); }
+      else if (key === 37) { moveWithin('search-mode', -1); }
+      else if (key === 39) { moveWithin('search-mode', 1); }
       else if (key === 40) { focusElement(activeCards()[0] || searchInput); }
       else if (key === 38) { focusElement(document.getElementById('profile-button')); }
     }
@@ -3001,11 +3347,13 @@
       if (modal === 'reading') { activate(document.getElementById('reading-close')); }
       else if (modal === 'clip-list') { closeClipList(); }
       else if (modal === 'genre-modal') { closeGenreFilter(); }
+      else if (modal === 'discover-options') { closeDiscoverOptions(); }
       else if (modal === 'collection-actor') { closeCollectionActor(); }
       else if (modal === 'connection') { closeConnection(); }
       else if (modal === 'detail') { closeDetail(); }
       else if (page === 'suche' && seriesContext) { backSeries(); }
       else if (page === 'suche' && searchActorId) { backToPeople(); }
+      else if (page === 'suche') { closeDiscoverSearch(); }
       else if (page === 'sammlungen' && collectionId) { backToCollections(); }
       else if (page === 'filme' && focused && focused.getAttribute('data-zone') === 'cards') { focusElement(currentNav()); }
       else if (page !== 'start') { setPage('start'); }
@@ -3018,6 +3366,8 @@
   window.addEventListener('unload', function () {
     if(clipJobTimer!==null){window.clearTimeout(clipJobTimer);clipJobTimer=null;}if(clipJobRequest){clipJobRequest.abort();clipJobRequest=null;}if(clipCreateRequest){clipCreateRequest.abort();clipCreateRequest=null;}if(clipRequest){clipRequest.abort();clipRequest=null;}
     cancelCollectionActorSearch();
+    if (actorRankRequest) { actorRankRequest.abort(); actorRankRequest = null; }
+    resetCollectionNext();
     cancelLoginQuick();
     if (phoneBridge) { phoneBridge.close(); phoneBridge = null; }
     if (modal === 'player') { stopPlayer(); }
@@ -3035,7 +3385,7 @@
   });
   searchInput.oninput = function () { if (page === 'suche') { if (isConnected() && !searchActorId) { peopleStart = 0; peopleTotal = 0; searchPeople(); } else if (!isConnected()) { renderSection(); } } };
   document.getElementById('auth-user').oninput = function () { fillSavedPassword(); };
-  document.getElementById('collection-actor-search').oninput = function () { actorBrowseStart = 0; searchCollectionActors(); };
+  document.getElementById('collection-actor-search').oninput = function () { searchCollectionActors(0, false, true); };
   document.getElementById('login-user').oninput = function () { cancelRestore(); document.getElementById('login-password').value = ''; };
   document.getElementById('login-password').oninput = function () { cancelRestore(); };
   (function () {

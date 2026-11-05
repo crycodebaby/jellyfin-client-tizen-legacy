@@ -11,7 +11,7 @@ async function main() {
   try {
     browser = await chromium.launch({ headless: true, args: ['--disable-gpu'] });
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-    await page.goto(`http://127.0.0.1:${server.address().port}`, { waitUntil: 'load' });
+    await page.goto(`http://127.0.0.1:${server.address().port}/?preview=1`, { waitUntil: 'load' });
     await page.waitForFunction(() => document.activeElement && document.activeElement.getAttribute('data-page') === 'start');
     const result = await page.evaluate(() => {
       const timings = [];

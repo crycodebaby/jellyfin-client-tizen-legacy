@@ -21,7 +21,7 @@ test('Profilstatus und Einstellungen sind mit wenigen Fernbedienungstasten errei
     assert.equal(await page.locator('#connection-status').textContent(), 'Angemeldet.');
     assert.equal(await page.locator('#auth-logout').isVisible(), true);
     assert.equal(await page.locator(':focus').getAttribute('data-profile-id'), 'user');
-    for (const expected of ['auth-open', 'auth-logout', 'phone-open', 'settings-open']) {
+    for (const expected of ['auth-open', 'phone-open', 'settings-open']) {
       await page.keyboard.press('ArrowDown');
       assert.equal(await page.locator(':focus').getAttribute('id'), expected);
     }
@@ -272,7 +272,8 @@ test('Besetzung, Merkliste und Schauspielersuche arbeiten mit Jellyfin zusammen'
     await page.keyboard.press('Escape');
     await page.locator('[data-page="merkliste"]').click();
     await page.waitForSelector('[data-movie-id="movie-1"]');
-    await page.locator('[data-page="suche"]').click();
+    await page.locator('[data-page="entdecken"]').click();
+    await page.locator('#discover-search').click();
     assert.equal(await page.locator('#search-mode').textContent(), 'Filme');
     await page.locator('#search-mode').click();
     await page.locator('#search-input').fill('Alex');
@@ -319,9 +320,15 @@ test('Sammlungen öffnen Filme und stellen den Fokus beim Zurückgehen wieder he
   try {
     await page.route('**/Users/AuthenticateByName', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"AccessToken":"token","User":{"Id":"user"}}' }));
     await page.route('**/Users/user/Items/movie-1', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ Id: 'movie-1', Name: 'Film A', People: [{ Id: 'person-1', Name: 'Alex', Type: 'Actor' }] }) }));
+    await page.route('**/Users/user/Items/movie-next', (route) => route.fulfill({ json: { Id: 'movie-next', Name: 'Film B', People: [] } }));
     await page.route('**/Items?*', (route) => {
       const params = new URL(route.request().url()).searchParams;
       const collection = params.get('includeItemTypes') === 'BoxSet';
+      if (params.get('isPlayed') === 'false') {
+        assert.equal(params.get('parentId'), 'collection-1');
+        assert.equal(params.get('limit'), '1');
+        return route.fulfill({ json: { Items: [{ Id: 'movie-next', Name: 'Film B' }], StartIndex: 0, TotalRecordCount: 1 } });
+      }
       const item = collection ? { Id: 'collection-1', Name: 'Filmreihe' } : { Id: 'movie-1', Name: 'Film A' };
       if (!collection && params.has('parentId')) { assert.equal(params.get('parentId'), 'collection-1'); }
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ Items: [item], StartIndex: Number(params.get('startIndex')), TotalRecordCount: 1 }) });
@@ -335,6 +342,15 @@ test('Sammlungen öffnen Filme und stellen den Fokus beim Zurückgehen wieder he
     await page.locator('[data-action="collection-open"]').click();
     await page.waitForFunction(() => document.activeElement.getAttribute('data-movie-id') === 'movie-1');
     assert.equal(await page.locator('#page-title').textContent(), 'Filmreihe');
+    assert.equal(await page.locator('#collection-heading-title').textContent(), 'Filmreihe');
+    await page.locator('#collection-next').waitFor({ state: 'visible' });
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'collection-next');
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#detail-title').textContent(), 'Film B');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'collection-next');
+    await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     await page.locator('#cast-list [data-actor-id="person-1"]').click();
     await page.waitForSelector('#actor-back', { state: 'visible' });
@@ -368,11 +384,68 @@ test('Sammlung nach Schauspieler filtern und zurücksetzen', async () => {
     await page.locator('[data-page="sammlungen"]').focus(); await page.keyboard.press('ArrowRight'); assert.equal(await page.locator(':focus').getAttribute('id'),'collection-actor-filter');
   } finally { await browser.close(); await new Promise(r=>server.close(r)); }
 });
-test('Schauspieler als Bilderraster mit Fernbedienung auswählen und weiterblättern', async () => {
- const server=createPreviewServer(); await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1920,height:1080}});
- try {
-  await page.route('**/Users/AuthenticateByName',r=>r.fulfill({json:{AccessToken:'token',User:{Id:'user',Name:'Test'}}}));await page.route('**/Genres?*',r=>r.fulfill({json:{Items:[],StartIndex:0,TotalRecordCount:0}}));await page.route('**/Items?*',r=>r.fulfill({json:{Items:[{Id:'film',Name:'Film'}],StartIndex:0,TotalRecordCount:1}}));
-  await page.route('**/Persons?*',r=>{let q=new URL(r.request().url()).searchParams,start=Number(q.get('startIndex'));let items=Array.from({length:Math.min(6,9-start)},(_,i)=>({Id:'p'+(start+i),Name:'Person '+(start+i),ImageTags:{Primary:'bild'}}));return r.fulfill({json:{Items:items,StartIndex:start,TotalRecordCount:9}})});
-  await page.goto(base+'/?preview=1');await page.locator('#profile-button').click();await page.locator('#settings-open').click();await page.locator('#server-url').fill(base);await page.locator('#settings-back').click();await page.locator('#auth-open').click();await page.locator('#auth-user').fill('Test');await page.locator('#auth-password').fill('test');await page.locator('#auth-submit').click();await page.locator('[data-page="filme"]').click();await page.locator('#collection-actor-filter').click();await page.locator('[data-actor-id=p0]').waitFor();assert.match(await page.locator('[data-actor-id=p0] .actor-choice-portrait').getAttribute('style'),/Images\/Primary/);assert.equal(await page.locator(':focus').getAttribute('data-actor-id'),'p0');await page.keyboard.press('ArrowRight');assert.equal(await page.locator(':focus').getAttribute('data-actor-id'),'p1');await page.keyboard.press('ArrowDown');assert.equal(await page.locator(':focus').getAttribute('data-actor-id'),'p4');await page.keyboard.press('ArrowDown');assert.equal(await page.locator(':focus').getAttribute('id'),'actor-next');await page.keyboard.press('Enter');await page.locator('[data-actor-id=p6]').waitFor();assert.equal(await page.locator(':focus').getAttribute('data-actor-id'),'p6');await page.keyboard.press('Enter');assert.match(await page.locator('#collection-actor-filter').textContent(),/Person 6/);
- } finally {await browser.close();await new Promise(r=>server.close(r));}
+test('Entdecken zählt Filme über mehrere Seiten und behält den Fokus beim Schauspielerblättern', async () => {
+  const server = createPreviewServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const ranked = { Id: 'top', Name: 'Zoe Test', Type: 'Actor', PrimaryImageTag: 'portrait' };
+  const credits = Array.from({ length: 14 }, (_, i) => ({ Id: 'p' + i, Name: 'Alex Test ' + String(i).padStart(2, '0'), Type: 'Actor' }));
+  const scanned = [];
+  try {
+    await page.route('**/Users/AuthenticateByName', route => route.fulfill({ json: { AccessToken: 'token', User: { Id: 'user', Name: 'Test' } } }));
+    await page.route('**/Genres?*', route => route.fulfill({ json: { Items: [{ Id: 'g1', Name: 'Action' }, { Id: 'g2', Name: 'Drama' }], StartIndex: 0, TotalRecordCount: 2 } }));
+    await page.route('**/Items?*', route => {
+      const params = new URL(route.request().url()).searchParams;
+      const start = Number(params.get('startIndex'));
+      if (params.get('fields') !== 'People') {
+        return route.fulfill({ json: { Items: [{ Id: 'film', Name: 'Film' }], StartIndex: start, TotalRecordCount: 1 } });
+      }
+      scanned.push(start);
+      assert.equal(params.get('userId'), 'user');
+      assert.equal(params.get('includeItemTypes'), 'Movie');
+      const items = start === 0 ? Array.from({ length: 100 }, (_, i) => ({
+        Id: 'film' + i, People: i === 0 ? credits.concat(ranked, ranked) : []
+      })) : [{ Id: 'film100', People: [ranked] }];
+      return route.fulfill({ json: { Items: items, StartIndex: start, TotalRecordCount: 101 } });
+    });
+    await page.goto(base + '/?preview=1');
+    await page.locator('#profile-button').click(); await page.locator('#settings-open').click();
+    await page.locator('#server-url').fill(base); await page.locator('#settings-back').click();
+    await page.locator('#auth-open').click(); await page.locator('#auth-user').fill('Test');
+    await page.locator('#auth-password').fill('test'); await page.locator('#auth-submit').click();
+    await page.locator('[data-page="entdecken"]').click();
+    await page.locator('#genre-filter').click();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'genre-apply');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.locator(':focus').getAttribute('data-genre-id'), 'g2');
+    await page.keyboard.press('Escape');
+    await page.locator('#collection-actor-filter').click();
+    await page.locator('[data-actor-id="top"]').waitFor();
+    assert.deepEqual(scanned, [0, 100]);
+    assert.equal(await page.locator(':focus').getAttribute('data-actor-id'), 'top');
+    assert.equal(await page.locator('[data-actor-id="top"] .actor-choice-count').textContent(), '2 Filme');
+    assert.match(await page.locator('[data-actor-id="top"] .actor-choice-portrait').getAttribute('style'), /Images\/Primary/);
+    const next = page.locator('#actor-next');
+    const nextX = (await next.boundingBox()).x;
+    for (const key of ['ArrowRight', 'ArrowDown', 'ArrowDown', 'Enter', 'Enter']) { await page.keyboard.press(key); }
+    assert.equal((await next.boundingBox()).x, nextX);
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'actor-next');
+    assert.equal(await next.getAttribute('aria-disabled'), 'true');
+    assert.match(await page.locator('#collection-actor-status').textContent(), /13–15/);
+    await page.keyboard.press('ArrowLeft'); await page.keyboard.press('Enter');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'actor-prev');
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await page.locator(':focus').getAttribute('data-actor-id'), 'p9');
+    await page.locator('#collection-actor-search').fill('Test');
+    assert.equal(await page.locator('#collection-actor-results button').first().getAttribute('data-actor-id'), 'top');
+    await page.locator('#actor-letters [data-letter="A"]').click();
+    assert.equal(await page.locator('#collection-actor-results [data-actor-id="top"]').count(), 0);
+    assert.equal(await page.locator('#collection-actor-results button').first().getAttribute('data-actor-id'), 'p0');
+    await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+    assert.match(await page.locator('#collection-actor-filter').textContent(), /Alex Test 00/);
+  } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 });

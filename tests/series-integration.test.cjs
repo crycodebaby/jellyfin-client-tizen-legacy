@@ -27,7 +27,7 @@ test('Seriensuche öffnet Staffeln und Episoden und kehrt sicher zurück', async
     });
     await page.goto(base + '/?preview=1'); await page.locator('#profile-button').click(); await page.locator('#settings-open').click(); await page.locator('#server-url').fill(base); await page.locator('#settings-back').click();
     await page.locator('#auth-open').click(); await page.locator('#auth-user').fill('Test'); await page.locator('#auth-password').fill('password'); await page.locator('#auth-submit').click();
-    await page.locator('[data-page="suche"]').click(); await page.locator('#series-search').click();
+    await page.locator('[data-page="entdecken"]').click(); await page.locator('#discover-search').click(); await page.locator('#series-search').click();
     assert.equal(await page.locator('#series-search').getAttribute('aria-pressed'), 'true');
     await page.locator('#search-input').fill('Test'); await page.locator('[data-series-id="series1"]').waitFor();
     await page.locator('[data-series-id="series1"]').click(); await page.locator('[data-season-id="season1"]').waitFor();

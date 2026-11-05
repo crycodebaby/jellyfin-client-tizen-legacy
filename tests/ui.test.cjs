@@ -87,12 +87,17 @@ test('Leseansicht zeigt das Filmplakat und scrollt per Fernbedienung', async () 
   assert.equal(await page.locator(':focus').getAttribute('id'), 'detail-read');
 }));
 
-test('Suche filtert Beispieltitel', async () => withPage(async (page) => {
-  await press(page, 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter', 'ArrowRight');
+test('Suche in Entdecken filtert Beispieltitel und kehrt zum Einstieg zurück', async () => withPage(async (page) => {
+  assert.equal(await page.locator('[data-page="suche"]').count(), 0);
+  await press(page, 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter', 'ArrowRight');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'discover-search');
+  await press(page, 'Enter');
   assert.equal(await page.locator(':focus').getAttribute('id'), 'search-input');
   await page.locator('#search-input').fill('Nacht');
   assert.equal(await page.locator('#section-cards button').count(), 1);
   assert.match(await page.locator('#section-cards').textContent(), /Nachtlinie/);
+  await press(page, 'Escape');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'discover-search');
 }));
 
 test('Beispieltitel lassen sich merken und entfernen', async () => withPage(async (page) => {
@@ -244,8 +249,9 @@ test('Filmantwort bei geöffnetem Dialog beendet Laden ohne Fokuswechsel', async
     await installControlledClient(page);
     await beginControlledLogin(page);
     await page.locator('#profile-button').click();
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'settings-open');
     await page.evaluate(() => window.testClient.movies[0](null, [{id:'one',title:'Film',description:'',imageUrl:''}], 1));
-    assert.equal(await page.locator(':focus').getAttribute('id'), 'auth-logout');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'settings-open');
     assert.equal(await page.locator('[data-movie-id="one"]').count(), 1);
     assert.equal(await page.locator('#empty-state').isVisible(), false);
     await page.keyboard.press('Escape');
@@ -407,8 +413,9 @@ test('Verworfener Refresh im Profildialog erhält den Sperrhinweis', async () =>
     await page.locator('[data-page="filme"]').click();
     await page.waitForFunction(() => window.testClient.movies.length === 4);
     await page.locator('#profile-button').click();
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'settings-open');
     await page.evaluate(() => window.testClient.movies[3](null, [{id:'fresh',title:'Aktuell',description:'',imageUrl:''}], 1));
-    assert.equal(await page.locator(':focus').getAttribute('id'), 'auth-logout');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'settings-open');
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('#empty-state').isVisible(), true);
     assert.match(await page.locator('#empty-state').textContent(), /erneut öffnen/i);
@@ -476,7 +483,7 @@ test('unload bricht laufende Filmanfrage ab', async () => {
 });
 
 test('Entdecken öffnet ein Duo und stellt den Fokus wieder her', async () => withPage(async (page) => {
-  await press(page, 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter', 'ArrowRight', 'ArrowDown', 'ArrowRight', 'Enter');
+  await press(page, 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter', 'ArrowRight', 'ArrowDown', 'ArrowDown', 'ArrowRight', 'Enter');
   assert.equal(await page.locator('#detail-title').textContent(), 'Darsteller A & B');
   assert.equal(await page.locator('#save-button').isVisible(), false);
   assert.equal(await page.locator(':focus').getAttribute('id'), 'detail-close');
@@ -502,7 +509,7 @@ test('30 schnelle Richtungswechsel und Wechsel zwischen Inhaltsreihen bleiben sy
     await page.keyboard.press(i % 2 ? 'ArrowUp' : 'ArrowDown');
     assert.equal(await page.locator(':focus').getAttribute('data-page'), i % 2 ? 'start' : 'filme');
   }
-  await press(page, 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter', 'ArrowRight');
+  await press(page, 'ArrowDown', 'ArrowDown', 'ArrowDown', 'Enter', 'ArrowRight', 'ArrowDown');
   for (let i = 0; i < 6; i += 1) {
     await press(page, 'ArrowDown');
     assert.equal(await page.locator(':focus').getAttribute('data-zone'), 'people');

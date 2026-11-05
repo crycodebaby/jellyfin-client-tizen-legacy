@@ -19,10 +19,13 @@ test('Startseite lädt Filmverlauf seitenweise und erhält den Fokus bei Rückke
     await page.route('**/Users/AuthenticateByName', (route) => route.fulfill({ json: { AccessToken: 'token', User: { Id: 'user', Name: 'Test' } } }));
     await page.route('**/Items?*', (route) => {
       const params = new URL(route.request().url()).searchParams;
+      if (params.get('sortBy') === 'DateCreated') {
+        return route.fulfill({ json: { Items: [{ Id: 'new-movie', Name: 'Neuer Film 1080p WEB-DL' }], StartIndex: 0, TotalRecordCount: 1 } });
+      }
       if (params.get('filters') !== 'IsResumable') return route.fulfill({ json: { Items: [], StartIndex: 0, TotalRecordCount: 0 } });
       resumeCalls += 1;
       const start = Number(params.get('startIndex'));
-      const items = Array.from({ length: Math.min(5, 7 - start) }, (_, i) => ({ Id: `m${start + i}`, Name: `Film ${start + i}`, UserData: { PlayedPercentage: 30 } }));
+      const items = Array.from({ length: Math.min(5, 7 - start) }, (_, i) => ({ Id: `m${start + i}`, Name: `Film ${start + i}`, ProductionYear: 2015, UserData: { PlayedPercentage: 30 } }));
       if (delayResume) { delayedResume = () => route.fulfill({ json: { Items: items, StartIndex: start, TotalRecordCount: 7 } }); return; }
       return route.fulfill({ json: { Items: items, StartIndex: start, TotalRecordCount: 7 } });
     });
@@ -38,11 +41,29 @@ test('Startseite lädt Filmverlauf seitenweise und erhält den Fokus bei Rückke
     assert.equal(await page.locator('#preview-hero').isVisible(), false);
     assert.equal(await page.locator('#home-recent-status').textContent(), 'Noch keine Filme gesehen.');
     assert.equal(await page.locator('#home-resume .home-progress').count(), 5);
+    assert.equal(await page.locator('#home-resume .poster .release-year').count(), 0);
+    assert.equal(await page.locator('#home-resume .card-title + .release-year').first().textContent(), '2015');
+    await page.locator('#home-latest button').waitFor();
+    assert.equal(await page.locator('#home-latest .card-title').textContent(), 'Neuer Film');
+    assert.equal(await page.locator('#home-latest .release-year').count(), 0);
     await page.locator('#home-resume .card-title').nth(0).evaluate((node) => { node.textContent = 'Geschichten von den fernen Blumeninseln'; });
     const homeTitle = await page.locator('#home-resume .card-title').nth(0).evaluate((node) => ({ fits: node.scrollHeight <= node.clientHeight, lines: node.clientHeight / parseFloat(getComputedStyle(node).lineHeight), bottom: node.getBoundingClientRect().bottom }));
-    const nextRail = await page.locator('#home-recent').evaluate((node) => node.parentNode.getBoundingClientRect().top);
+    const nextRail = await page.locator('#home-latest').evaluate((node) => node.parentNode.getBoundingClientRect().top);
     assert.ok(homeTitle.fits && homeTitle.lines > 1 && homeTitle.bottom < nextRail, 'Lange Titel umbrechen ohne Überlappung auf der Startseite');
     await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await page.locator(':focus').getAttribute('data-zone'), 'home-latest');
+    assert.ok(await page.evaluate(() => {
+      const library = document.getElementById('home-library');
+      const header = document.querySelector('.topbar').getBoundingClientRect();
+      const viewport = library.getBoundingClientRect();
+      const focusedCard = document.activeElement.getBoundingClientRect();
+      return library.scrollTop > 0 && viewport.top >= header.bottom &&
+        focusedCard.top >= viewport.top && focusedCard.bottom <= viewport.bottom;
+    }), 'Die gewählte Karte bleibt vollständig im Scrollbereich unter der Kopfzeile');
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await page.locator(':focus').getAttribute('data-movie-id'), 'm0');
+    assert.equal(await page.locator('#home-library').evaluate(node => node.scrollTop), 0);
     for (let i = 0; i < 5; i += 1) await page.keyboard.press('ArrowRight');
     await page.waitForFunction(() => document.activeElement.getAttribute('data-movie-id') === 'm5');
     await page.keyboard.press('Enter'); await page.locator('[data-actor-id="actor"]').waitFor();
@@ -98,6 +119,24 @@ test('Startseiten-Tipp öffnet eine Person aus einem vorhandenen Film und kehrt 
     await page.route('**/Users/user/Items/person-1', route => route.fulfill({json:{Id:'person-1',Name:'Darsteller'}}));
     await page.goto(base+'/?preview=1'); await page.locator('#profile-button').click(); await page.locator('#settings-open').click(); await page.locator('#server-url').fill(base); await page.locator('#settings-back').click(); await page.locator('#auth-open').click(); await page.locator('#auth-user').fill('Robin'); await page.locator('#auth-password').fill('password'); await page.locator('#auth-submit').click();
     await page.locator('[data-page="start"]').click(); await page.locator('#home-actor').waitFor({state:'visible'}); assert.match(await page.locator('#home-actor').textContent(),/Darsteller/);
+    await page.locator('#home-greeting').evaluate(node => {
+      node.textContent = 'Warum können Geister so schlecht lügen, obwohl sie sich jede Ausrede der Welt ausdenken können?';
+    });
+    assert.ok(await page.evaluate(() => {
+      const heading = document.getElementById('home-greeting');
+      const button = document.getElementById('home-actor');
+      const detail = document.getElementById('home-greeting-detail');
+      const headingBox = heading.getBoundingClientRect();
+      const welcomeBox = document.querySelector('.home-welcome').getBoundingClientRect();
+      return headingBox.height > parseFloat(getComputedStyle(heading).lineHeight) &&
+        heading.scrollWidth <= heading.clientWidth &&
+        headingBox.right < button.getBoundingClientRect().left &&
+        detail.getBoundingClientRect().bottom < welcomeBox.bottom;
+    }), 'Lange Fragen umbrechen neben der Aktion und lassen Platz für die Pointe');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator(':focus').getAttribute('data-zone'), 'home-latest');
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await page.locator(':focus').getAttribute('id'), 'home-actor');
     await page.locator('#home-actor').click(); assert.equal(await page.locator('#person-name').textContent(),'Darsteller'); await page.keyboard.press('Escape'); assert.equal(await page.locator('#home-library').isVisible(),true);
   } finally { await page.close(); await browser.close(); await new Promise(resolve=>server.close(resolve)); }
 });

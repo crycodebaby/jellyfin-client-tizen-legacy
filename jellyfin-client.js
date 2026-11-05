@@ -16,6 +16,7 @@
     var deviceId = '';
     var quickSecret = '';
     var quickAuthorized = false;
+    var rankedActorCache = null;
 
     function header(currentToken) {
       return 'MediaBrowser Client="Smairys%20Mediathek", Device="Samsung%20TV", DeviceId="' + encodeURIComponent(deviceId) + '", Version="0.1.0"' +
@@ -35,6 +36,7 @@
       userId = null;
       quickSecret = '';
       quickAuthorized = false;
+      rankedActorCache = null;
       cancelPending();
     }
 
@@ -270,6 +272,60 @@
     function browseActors(start, limit, callback) {
       return pageRequest('/Persons?userId=' + encodeURIComponent(userId) + '&personTypes=Actor&sortBy=SortName&sortOrder=Ascending', start, limit, true, callback);
     }
+    function rankedMovieActors(callback) {
+      if (!token) { return failLater('unauthorized', callback); }
+      var sessionToken = token;
+      if (rankedActorCache && rankedActorCache.token === sessionToken && Date.now() - rankedActorCache.time < 300000) {
+        var cached = rankedActorCache.people;
+        var timer = window.setTimeout(function () { callback(null, cached); }, 0);
+        return { abort: function () { window.clearTimeout(timer); } };
+      }
+      var path = '/Items?userId=' + encodeURIComponent(userId) + '&includeItemTypes=Movie&recursive=true&fields=People&enableUserData=false&enableImages=false&sortBy=SortName';
+      var byId = Object.create(null), films = Object.create(null), actors = [];
+      var request, cancelled = false, hasCredits = false;
+      function readPage(start) {
+        request = send({ url: base + path + '&startIndex=' + start + '&limit=100', headers: { Authorization: header(sessionToken) } }, function (error, data) {
+          var i, j, film, person, actor, credits, next;
+          if (cancelled) { return; }
+          if (error) { callback(error); return; }
+          if (sessionToken !== token) { return; }
+          if (!data || data.StartIndex !== start || !Array.isArray(data.Items) || data.Items.length > 100 ||
+              !isFinite(data.TotalRecordCount) || typeof data.TotalRecordCount !== 'number' ||
+              data.TotalRecordCount < 0 || data.TotalRecordCount % 1 || (!data.Items.length && start < data.TotalRecordCount)) {
+            callback({ type: 'parse' }); return;
+          }
+          for (i = 0; i < data.Items.length; i += 1) {
+            film = data.Items[i];
+            if (!film || !validId(film.Id) || films[film.Id]) { continue; }
+            films[film.Id] = true;
+            if (!Array.isArray(film.People)) { continue; }
+            hasCredits = true;
+            credits = Object.create(null);
+            for (j = 0; j < film.People.length; j += 1) {
+              person = film.People[j];
+              if (!person || person.Type !== 'Actor' || !validId(person.Id) || typeof person.Name !== 'string' || credits[person.Id]) { continue; }
+              credits[person.Id] = true;
+              actor = byId[person.Id];
+              if (!actor) {
+                actor = { id: person.Id, name: person.Name, count: 0, imageUrl: '' };
+                byId[person.Id] = actor;
+                actors.push(actor);
+              }
+              actor.count += 1;
+              if (!actor.imageUrl) { actor.imageUrl = imageUrl(person.Id, person.PrimaryImageTag, 520); }
+            }
+          }
+          next = start + data.Items.length;
+          if (next < data.TotalRecordCount) { readPage(next); return; }
+          if (next && !hasCredits) { callback({ type: 'parse' }); return; }
+          actors.sort(function (a, b) { return b.count - a.count || a.name.localeCompare(b.name, 'de') || a.id.localeCompare(b.id); });
+          rankedActorCache = { token: sessionToken, time: Date.now(), people: actors };
+          callback(null, actors);
+        });
+      }
+      readPage(0);
+      return { abort: function () { cancelled = true; if (request) { request.abort(); } } };
+    }
     function searchMovies(term, start, limit, callback) {
       if (!token || typeof term !== 'string' || !term.replace(/\s/g, '') || term.length > 200) { return failLater(token ? 'arguments' : 'unauthorized', callback); }
       return pageRequest('/Items?userId=' + encodeURIComponent(userId) + '&includeItemTypes=Movie&recursive=true&sortBy=SortName&sortOrder=Ascending&fields=Overview&searchTerm=' + encodeURIComponent(term), start, limit, false, callback);
@@ -309,21 +365,27 @@
       return pageRequest('/Genres?userId=' + encodeURIComponent(userId) + '&includeItemTypes=Movie&sortBy=SortName&sortOrder=Ascending', 0, 100, true, callback);
     }
     function discoverMovies(start, limit, callback, filter, genreId, sort) {
-      var suffix = filter === 'unplayed' ? '&isPlayed=false' : (filter === 'played' ? '&isPlayed=true' : '');
-      var order = sort === 'added' ? 'DateCreated&sortOrder=Descending' : (sort === 'year' ? 'PremiereDate&sortOrder=Descending' : 'SortName&sortOrder=Ascending');
-      if (genreId) { if (!validId(genreId)) { return failLater('arguments', callback); } suffix += '&genreIds=' + encodeURIComponent(genreId); }
-      return pageRequest('/Items?userId=' + encodeURIComponent(userId) + '&includeItemTypes=Movie&recursive=true&sortBy=' + order + '&fields=Overview&enableUserData=true' + suffix, start, limit, false, callback);
+      return filterMovies(start, limit, callback, { filter: filter, genreIds: genreId ? [genreId] : [], sort: sort });
     }
     function filterMovies(start, limit, callback, options) {
-      var suffix = '', ids, i, order;
-      options = options || {}; ids = options.genreIds || [];
+      var suffix = '', ids, years, i, order;
+      options = options || {}; ids = options.genreIds || []; years = options.years || [];
       if (!Array.isArray(ids) || ids.length > 20 || (options.parentId && !validId(options.parentId)) || (options.actorId && !validId(options.actorId))) { return failLater('arguments', callback); }
       for (i = 0; i < ids.length; i += 1) { if (!validId(ids[i])) { return failLater('arguments', callback); } }
+      if (!Array.isArray(years) || years.length > 220) { return failLater('arguments', callback); }
+      for (i = 0; i < years.length; i += 1) { if (typeof years[i] !== 'number' || years[i] % 1 !== 0 || years[i] < 1880 || years[i] > 9999) { return failLater('arguments', callback); } }
       if (ids.length) { suffix += '&genreIds=' + encodeURIComponent(ids.join(',')); }
+      if (years.length) { suffix += '&years=' + encodeURIComponent(years.join(',')); }
       if (options.actorId) { suffix += '&personTypes=Actor&personIds=' + encodeURIComponent(options.actorId); }
       if (options.parentId) { suffix += '&parentId=' + encodeURIComponent(options.parentId); }
       if (options.filter === 'played') { suffix += '&isPlayed=true'; } else if (options.filter === 'unplayed') { suffix += '&isPlayed=false'; }
-      order = options.parentId ? 'PremiereDate,SortName&sortOrder=Ascending' : (options.sort === 'added' ? 'DateCreated&sortOrder=Descending' : (options.sort === 'year' ? 'PremiereDate&sortOrder=Descending' : 'SortName&sortOrder=Ascending'));
+      if (options.filter === 'resumable') { suffix += '&filters=IsResumable'; }
+      order = 'SortName&sortOrder=Ascending';
+      if (options.parentId) { order = 'PremiereDate,SortName&sortOrder=Ascending'; }
+      else if (options.sort === 'added') { order = 'DateCreated&sortOrder=Descending'; }
+      else if (options.sort === 'year') { order = 'PremiereDate&sortOrder=Descending'; }
+      else if (options.sort === 'oldest') { order = 'ProductionYear,SortName&sortOrder=Ascending'; }
+      else if (options.sort === 'newest') { order = 'ProductionYear,SortName&sortOrder=Descending'; }
       return pageRequest('/Items?userId=' + encodeURIComponent(userId) + '&includeItemTypes=Movie&recursive=true&sortBy=' + order + '&fields=Overview&enableUserData=true' + suffix, start, limit, false, callback);
     }
     function latestMovies(start, limit, callback) {
@@ -542,7 +604,7 @@
       }
     }
 
-    return { login: login, beginQuickConnect: beginQuickConnect, pollQuickConnect: pollQuickConnect, finishQuickConnect: finishQuickConnect, cancelQuickConnect: cancelQuickConnect, exportSession: exportSession, restoreSession: restoreSession, movies: movies, movieDetails: movieDetails, personDetails: personDetails, localTrailers: localTrailers, searchPeople: searchPeople, browseActors: browseActors, searchMovies: searchMovies, searchSeries: searchSeries, seriesChildren: seriesChildren, actorMovies: actorMovies, actorSeries: actorSeries, collections: collections, collectionMovies: collectionMovies, collectionActorMovies: collectionActorMovies, favorites: favorites, genres: genres, discoverMovies: discoverMovies, filterMovies: filterMovies, latestMovies: latestMovies, resumeMovies: resumeMovies, recentlyPlayedMovies: recentlyPlayedMovies, setFavorite: setFavorite, authorizeQuickConnect: authorizeQuickConnect, playbackInfo: playbackInfo, selectAudio: selectAudio, subtitleText: subtitleText, reportPlayback: reportPlayback, logout: logout, isAuthenticated: function () { return !!token; } };
+    return { login: login, beginQuickConnect: beginQuickConnect, pollQuickConnect: pollQuickConnect, finishQuickConnect: finishQuickConnect, cancelQuickConnect: cancelQuickConnect, exportSession: exportSession, restoreSession: restoreSession, movies: movies, movieDetails: movieDetails, personDetails: personDetails, localTrailers: localTrailers, searchPeople: searchPeople, browseActors: browseActors, rankedMovieActors: rankedMovieActors, searchMovies: searchMovies, searchSeries: searchSeries, seriesChildren: seriesChildren, actorMovies: actorMovies, actorSeries: actorSeries, collections: collections, collectionMovies: collectionMovies, collectionActorMovies: collectionActorMovies, favorites: favorites, genres: genres, discoverMovies: discoverMovies, filterMovies: filterMovies, latestMovies: latestMovies, resumeMovies: resumeMovies, recentlyPlayedMovies: recentlyPlayedMovies, setFavorite: setFavorite, authorizeQuickConnect: authorizeQuickConnect, playbackInfo: playbackInfo, selectAudio: selectAudio, subtitleText: subtitleText, reportPlayback: reportPlayback, logout: logout, isAuthenticated: function () { return !!token; } };
   }
 
   root.SMAIRYS_JELLYFIN = { create: create, normalizeAddress: normalizeAddress };

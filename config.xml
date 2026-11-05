@@ -2,10 +2,10 @@
 <widget xmlns="http://www.w3.org/ns/widgets"
         xmlns:tizen="http://tizen.org/ns/widgets"
         id="http://smairys.local/mediathek"
-        version="0.1.41"
+        version="0.1.42"
         viewmodes="maximized">
   <name>Smairys Mediathek</name>
-  <description>Phase-0 Bedienungs- und Verbindungsprototyp</description>
+  <description>Jellyfin-Mediathek für Samsung Smart TVs</description>
   <content src="index.html" />
   <icon src="branding/tv-icon.png" />
   <access origin="*" subdomains="true" />
