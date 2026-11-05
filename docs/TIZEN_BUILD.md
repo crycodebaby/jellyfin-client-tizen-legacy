@@ -6,6 +6,7 @@ Für aktuelle Funktionen gilt der [Projektkontext](PROJECT_CONTEXT.md). Änderun
 
 | Version | Web-Build | Installation und Start | Nutzerabnahme |
 | --- | --- | --- | --- |
+| 0.1.43 | 27 Laufzeitdateien geprüft, beide XML-Signaturen kryptografisch validiert | Apps2Samsung bestätigte Update und Start auf dem ersten TV | Gesehen-Status und Sammlungsvorschlag am TV noch abzunehmen |
 | 0.1.42 | 27 Laufzeitdateien geprüft, Autoren- und Distributor-Signatur des WGT kryptografisch validiert | Apps2Samsung bestätigte Update und Start auf dem ersten TV | Neuer Bedienstand ausstehend |
 | 0.1.41 | Geprüft | Apps2Samsung bestätigte Installation und Start auf dem ersten TV | Fortsetzen nach Beenden und erneutem Öffnen bei einem Film bestätigt. Wiedergabeart nicht erfasst. |
 | 0.1.39 | Geprüft | Apps2Samsung meldete den Stand auf dem zweiten TV | Einzelne frühere Nutzerprüfungen bleiben in der Historie nachvollziehbar. |

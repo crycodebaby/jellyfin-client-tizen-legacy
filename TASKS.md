@@ -4,7 +4,7 @@ Aktueller Stand in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md). Produktziele i
 
 ## Nächste Geräteabnahme
 
-- [ ] 0.1.42 auf dem ersten TV prüfen: Entdecken mit Filterkombination und Reset, Suche mit Rückkehr zum Fokus, Startreihen, freie Posterflächen und Profilnavigation.
+- [ ] 0.1.43 auf dem ersten TV prüfen: Sammlungsvorschlag und Ausblenden, Gesehen-Badge mit Fortsetzungsposition, Entdecken mit Filterkombination und Reset, Suche mit Rückkehr zum Fokus und Profilnavigation.
 - [ ] Weitere reale Medienformate, HLS-Suchvorgänge, Tonwechsel, Textuntertitel und Wiedergabeende prüfen.
 - [ ] Fehlerfälle mit zwei echten Konten, TV-Neustart, Speicherfehler und Serverausfall am Gerät prüfen.
 

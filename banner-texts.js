@@ -10,7 +10,7 @@
     { id: 'weekend', weekend: true, text: 'Wochenende. Film an. Welt aus.' },
     { id: 'fresh', event: 'new-film', text: 'Frisch im Regal: {filmtitel}. Dein Sofa wurde informiert.' },
     { id: 'balloon', question: 'Warum ist der Luftballon geplatzt?', text: 'Aus Platzgründen.' },
-    { id: 'roll', question: 'Warum kommt die Klopapierrolle nicht über die Straße?', text: 'Sie steckt in der Klemme. Genauer gesagt in der Ritze.' },
+    { id: 'roll', question: 'Warum hat die Klopapierrolle gekündigt?', text: 'Sie hatte die Scheiße satt.' },
     { id: 'ghost', question: 'Warum können Geister so schlecht lügen?', text: 'Weil man sie sofort durchschaut.' },
     { id: 'magnet', question: 'Was sagt ein Magnet zum anderen?', text: 'Ich find dich anziehend.' },
     { id: 'excuse', text: 'Nur noch ein Film. Die Ausrede kennst du ja, {name}.' },

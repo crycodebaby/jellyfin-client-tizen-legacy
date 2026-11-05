@@ -671,27 +671,38 @@
   }
 
   function appendCardMetadata(card, item, showStatus) {
-    var label, track, progress;
+    var metadata, label, track, progress, percent = 0;
+    if (!item.year && !showStatus) { return; }
+    metadata = document.createElement('span');
+    metadata.className = 'card-metadata';
     if (item.year) {
       label = document.createElement('span');
       label.className = 'release-year';
       label.textContent = String(item.year);
-      card.appendChild(label);
+      metadata.appendChild(label);
     }
+    card.appendChild(metadata);
     if (!showStatus) { return; }
     if (item.isPlayed) {
+      addClass(card, 'is-watched');
       label = document.createElement('span');
       label.className = 'home-played';
       label.textContent = 'Gesehen';
-      card.appendChild(label);
-    } else if (item.playedPercentage > 0) {
+      metadata.appendChild(label);
+    }
+    if (item.positionSeconds > 0 && item.positionSeconds < item.durationSeconds) {
+      percent = Math.min(100, item.positionSeconds / item.durationSeconds * 100);
+    } else if (!item.isPlayed && !item.positionSeconds && item.playedPercentage > 0 && item.playedPercentage < 100) {
+      percent = item.playedPercentage;
+    }
+    if (percent > 0) {
       track = document.createElement('span');
       track.className = 'card-progress';
       progress = document.createElement('span');
       progress.className = 'home-progress';
-      progress.style.width = Math.min(100, item.playedPercentage) + '%';
+      progress.style.width = percent + '%';
       track.appendChild(progress);
-      card.appendChild(track);
+      metadata.appendChild(track);
     }
   }
 
@@ -1483,7 +1494,7 @@
       if (item.imageUrl) { image = document.createElement('img'); image.alt = ''; image.src = item.imageUrl; image.onerror = function () { if (this.parentNode) { this.parentNode.removeChild(this); } }; poster.appendChild(image); }
       title = document.createElement('span'); title.className = 'card-title'; title.textContent = rail.id === 'latest' ? latestCardTitle(item) : item.title;
       card.appendChild(poster); card.appendChild(title);
-      appendCardMetadata(card, item, rail.id === 'resume');
+      appendCardMetadata(card, item, true);
       container.appendChild(card);
     }
   }
@@ -1551,7 +1562,9 @@
     var i;
     abortHome();
     document.getElementById('home-resume').parentNode.style.display = '';
-    document.getElementById('home-collection').style.display = 'none'; document.getElementById('home-actor').style.display = 'none'; suggestedCollection = null; suggestedActor = null;
+    document.getElementById('home-collection').style.display = 'none';
+    document.getElementById('home-collection-dismiss').style.display = 'none';
+    document.getElementById('home-actor').style.display = 'none'; suggestedCollection = null; suggestedActor = null;
     bannerChoice = selectBanner(homeRails[1].start === 0 ? homeRails[1].items[0] : null);
     updateHomeGreeting();
     for (i = 0; i < homeRails.length; i += 1) { var start = homeRestore && homeRestore.homeRail === 'home-' + homeRails[i].id ? homeRails[i].start : 0; homeRails[i].items = []; homeRails[i].start = start; homeRails[i].total = 0; homeRails[i].loaded = false; renderHomeRail(homeRails[i]); loadHomeRail(homeRails[i], start); }
@@ -1564,19 +1577,27 @@
   function rememberPlayedCollection(movieId) {
     var key = collectionHistoryKey();
     if (!key || page !== 'sammlungen' || !collectionId || !collectionName || !movieId) { return; }
-    try { window.localStorage.setItem(key, JSON.stringify({ id: collectionId, name: collectionName, movieId: movieId, time: new Date().getTime() })); } catch (ignore) {}
+    try { window.localStorage.setItem(key, JSON.stringify({ version: 2, id: collectionId, name: collectionName, movieId: movieId, time: new Date().getTime() })); } catch (ignore) {}
   }
   function updateHomeCollection() {
     var key = collectionHistoryKey(), entry, i, j, matches = false, now = new Date().getTime(), button = document.getElementById('home-collection');
+    var dismiss = document.getElementById('home-collection-dismiss');
     if (!key || page !== 'start') { return; }
     try { entry = JSON.parse(window.localStorage.getItem(key) || 'null'); } catch (ignore) { entry = null; }
-    if (entry && typeof entry.id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(entry.id) && typeof entry.name === 'string' && entry.name.length > 0 && entry.name.length <= 300 && typeof entry.movieId === 'string' && typeof entry.time === 'number' && now >= entry.time && now - entry.time < 30 * 86400000) {
+    if (entry && entry.version === 2 && typeof entry.id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(entry.id) && typeof entry.name === 'string' && entry.name.length > 0 && entry.name.length <= 300 && typeof entry.movieId === 'string' && typeof entry.time === 'number' && now >= entry.time && now - entry.time < 7 * 86400000) {
       for (i = 0; i < homeRails.length; i += 2) { if (homeRails[i].loaded) { for (j = 0; j < homeRails[i].items.length; j += 1) { if (homeRails[i].items[j].id === entry.movieId) { matches = true; } } } }
     }
     suggestedCollection = matches ? entry : null;
     button.textContent = matches ? 'Sammlung: ' + entry.name : '';
-    button.style.display = matches ? 'block' : 'none';
+    button.style.display = matches ? 'inline-block' : 'none';
+    dismiss.style.display = button.style.display;
     document.getElementById('home-actor').style.display = !matches && suggestedActor ? 'block' : 'none';
+    if (!matches && (focused === button || focused === dismiss)) { focusElement(firstHomeCard()); }
+  }
+  function dismissHomeCollection() {
+    if (!suggestedCollection || page !== 'start') { return; }
+    try { window.localStorage.removeItem(collectionHistoryKey()); } catch (ignore) { return; }
+    updateHomeCollection();
   }
   function openSuggestedCollection() {
     var entry = suggestedCollection;
@@ -2896,6 +2917,7 @@
     else if (action === 'detail') { openDetail(parseInt(element.getAttribute('data-item'), 10)); }
     else if (action === 'collection-open') { openCollection(element.getAttribute('data-movie-id')); }
     else if (action === 'home-collection') { openSuggestedCollection(); }
+    else if (action === 'home-collection-dismiss') { dismissHomeCollection(); }
     else if (action === 'home-actor' && suggestedActor) { openActor(suggestedActor.id, suggestedActor.name); }
     else if (action === 'collection-actor-open') { openCollectionActor(); }
     else if (action === 'collection-actor-close') { closeCollectionActor(); }
@@ -3180,7 +3202,9 @@
       else if (key === 39 && focused.id === 'actor-back') { focusElement(document.getElementById('profile-button')); }
       else if (key === 40) { focusElement(page === 'start' ? (isConnected() ? firstHomeCard() : nodesForZone('hero')[0]) : (page === 'suche' && !isConnected() ? searchInput : (activeCards()[0] || currentNav()))); }
     } else if (zone === 'home-collection') {
-      if (key === 37) { focusElement(currentNav()); }
+      if (key === 37 && focused.id === 'home-collection-dismiss') { focusElement(document.getElementById('home-collection')); }
+      else if (key === 37) { focusElement(currentNav()); }
+      else if (key === 39 && focused.id === 'home-collection') { focusElement(document.getElementById('home-collection-dismiss')); }
       else if (key === 38 || key === 39) { focusElement(document.getElementById('profile-button')); }
       else if (key === 40) { focusElement(homeCards(homeRails[0])[0] || homeCards(homeRails[1])[0] || homeCards(homeRails[2])[0] || currentNav()); }
     } else if (zone === 'home-resume' || zone === 'home-latest' || zone === 'home-recent') {

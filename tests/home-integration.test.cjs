@@ -42,7 +42,7 @@ test('Startseite lädt Filmverlauf seitenweise und erhält den Fokus bei Rückke
     assert.equal(await page.locator('#home-recent-status').textContent(), 'Noch keine Filme gesehen.');
     assert.equal(await page.locator('#home-resume .home-progress').count(), 5);
     assert.equal(await page.locator('#home-resume .poster .release-year').count(), 0);
-    assert.equal(await page.locator('#home-resume .card-title + .release-year').first().textContent(), '2015');
+    assert.equal(await page.locator('#home-resume .card-title + .card-metadata .release-year').first().textContent(), '2015');
     await page.locator('#home-latest button').waitFor();
     assert.equal(await page.locator('#home-latest .card-title').textContent(), 'Neuer Film');
     assert.equal(await page.locator('#home-latest .release-year').count(), 0);
@@ -95,7 +95,7 @@ async function assertEventually(predicate) {
   assert.fail('Erwarteter asynchroner Zustand wurde nicht erreicht');
 }
 
-test('Zuletzt aus Sammlung gestarteter Film erzeugt profilbezogene Startverknüpfung', async () => {
+test('Aktuelle Sammlung auf Start ist ausblendbar und alte Vorschläge bleiben verborgen', async () => {
  const server=createPreviewServer(); await new Promise(r=>server.listen(0,'127.0.0.1',r)); const base='http://127.0.0.1:'+server.address().port;
  const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1920,height:1080}});let watched=false;
  try {
@@ -105,6 +105,22 @@ test('Zuletzt aus Sammlung gestarteter Film erzeugt profilbezogene Startverknüp
   await page.route('**/Items?*',r=>{const q=new URL(r.request().url()).searchParams;let items=q.get('includeItemTypes')==='BoxSet'?[{Id:'col1',Name:'Filmreihe'}]:(q.get('parentId')==='col1'?[{Id:'film1',Name:'Film'}]:(watched && (q.get('isPlayed')==='true'||q.get('filters')==='IsResumable')?[{Id:'film1',Name:'Film'}]:[]));return r.fulfill({json:{Items:items,StartIndex:Number(q.get('startIndex')),TotalRecordCount:items.length}})});
   await page.route('**/Users/user/Items/film1',r=>r.fulfill({json:{Id:'film1',Name:'Film',People:[],UserData:{}}}));await page.route('**/Items/*/PlaybackInfo',r=>r.fulfill({json:{PlaySessionId:'s',MediaSources:[{Id:'source',SupportsDirectPlay:true}]}}));await page.route('**/Sessions/Playing**',r=>{watched=true;return r.fulfill({status:204,body:''})});
   await page.goto(base+'/?preview=1');await page.locator('#profile-button').click();await page.locator('#settings-open').click();await page.locator('#server-url').fill(base);await page.locator('#settings-back').click();await page.locator('#auth-open').click();await page.locator('#auth-user').fill('Test');await page.locator('#auth-password').fill('test');await page.locator('#auth-submit').click();await page.locator('[data-page="sammlungen"]').click();await page.locator('[data-action="collection-open"]').click();await page.locator('[data-movie-id="film1"]').first().click();await page.locator('#play-button').click();await page.waitForFunction(()=>document.getElementById('player-status').textContent==='Wiedergabe',null,{timeout:5000}).catch(async e=>{throw new Error('Playerstatus: '+await page.locator('#player-status').textContent()+' / Detail: '+await page.locator('#detail-footnote').textContent())});await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.locator('[data-page="start"]').click();await page.locator('#home-collection').waitFor({state:'visible'});assert.match(await page.locator('#home-collection').textContent(),/Filmreihe/);await page.locator('#home-collection').click();await page.locator('#section-cards [data-movie-id="film1"]').first().waitFor();assert.equal(await page.locator('#page-title').textContent(),'Filmreihe');
+  await page.locator('[data-page="start"]').click();
+  await page.locator('#home-collection').waitFor({state:'visible'});
+  await page.locator('#home-collection').press('ArrowRight');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'home-collection-dismiss');
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#home-collection').isVisible(), false);
+  assert.equal(await page.locator(':focus').getAttribute('data-movie-id'), 'film1');
+  for (const oldEntry of [{ time: Date.now() }, { version: 2, time: Date.now() - 8 * 86400000 }]) {
+    await page.evaluate(entry => {
+      localStorage.setItem('smairys.collection.' + encodeURIComponent(location.origin) + '.user',
+        JSON.stringify({ id: 'col1', name: 'Filmreihe', movieId: 'film1', ...entry }));
+    }, oldEntry);
+    await page.locator('[data-page="start"]').click();
+    await page.locator('#home-resume [data-movie-id="film1"]').waitFor();
+    assert.equal(await page.locator('#home-collection').isVisible(), false);
+  }
  } finally {await browser.close();await new Promise(r=>server.close(r));}
 });
 

@@ -25,7 +25,13 @@ test('Neue Filme und Gesehenfilter nutzen Jellyfin und sind per Fernbedienung er
       const favorite = q.get('isFavorite') === 'true';
       const discover = !favorite && ['SortName', 'ProductionYear,SortName'].includes(q.get('sortBy'));
       const items = latest ? Array.from({ length: 5 }, (_, i) => ({ Id: `latest${i}`, Name: `Film ${i}` })) : (favorite || discover ? [{ Id: 'm1', Name: 'Ein Film', UserData: { PlayedPercentage: 35 } }] : []);
-      if (discover && !q.has('isPlayed')) { items.push({ Id: 'seen', Name: 'Gesehener Film', ProductionYear: 2011, UserData: { Played: true } }); }
+      if (discover && !q.has('isPlayed')) {
+        items.push(
+          { Id: 'seen', Name: 'Gesehener Film', ProductionYear: 2011, UserData: { Played: true, PlayedPercentage: 100 } },
+          { Id: 'rewatch', Name: 'Ein sehr langer Filmtitel für drei Zeilen', RunTimeTicks: 1000000000,
+            UserData: { Played: true, PlayedPercentage: 100, PlaybackPositionTicks: 250000000 } }
+        );
+      }
       route.fulfill({ json: { Items: items, StartIndex: Number(q.get('startIndex')), TotalRecordCount: items.length } });
     });
     await page.goto(base + '/?preview=1');
@@ -113,6 +119,21 @@ test('Neue Filme und Gesehenfilter nutzen Jellyfin und sind per Fernbedienung er
       assert.ok(await card.evaluate((node, selector) =>
         node.querySelector(selector).getBoundingClientRect().top >= node.querySelector('.poster').getBoundingClientRect().bottom, marker));
     }
+    assert.equal(await page.locator('[data-movie-id="seen"] .card-progress').count(), 0);
+    assert.equal(await page.locator('[data-movie-id="m1"] .home-played').count(), 0);
+    const rewatch = page.locator('[data-movie-id="rewatch"]');
+    assert.match(await rewatch.getAttribute('class'), /\bis-watched\b/);
+    assert.doesNotMatch(await page.locator('[data-movie-id="m1"]').getAttribute('class'), /\bis-watched\b/);
+    assert.equal(await rewatch.locator('.home-played').textContent(), 'Gesehen');
+    assert.equal(await rewatch.locator('.home-progress').evaluate(node => node.style.width), '25%');
+    assert.ok(await rewatch.evaluate(card => {
+      const poster = card.querySelector('.poster').getBoundingClientRect();
+      const badge = card.querySelector('.home-played').getBoundingClientRect();
+      const progress = card.querySelector('.card-progress').getBoundingClientRect();
+      const nextRow = document.querySelector('.movie-row-preview').getBoundingClientRect();
+      return poster.bottom < badge.top && badge.bottom < progress.top &&
+        badge.right <= poster.right && progress.bottom < nextRow.top;
+    }));
     await page.locator('#sort-filter').click();
     await page.getByRole('button', { name: 'Älteste zuerst', exact: true }).click();
     await page.locator('#section-cards [data-movie-id="m1"]').waitFor();

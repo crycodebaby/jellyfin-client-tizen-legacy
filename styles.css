@@ -52,8 +52,10 @@ button { cursor: pointer; }
 .home-library { position: relative; height: 950px; padding: 10px 0 0 6px; overflow: hidden; }
 .home-welcome { display: table; table-layout: auto; width: 100%; margin: 0 0 22px; padding: 18px 28px; border: 1px solid #38332e; border-radius: 15px; background: #1c1a1a; background: -webkit-linear-gradient(left, #29201c, #191b20 68%, #14171b); background: linear-gradient(to right, #29201c, #191b20 68%, #14171b); }
 .home-welcome-copy, .home-welcome-actions { display: table-cell; vertical-align: middle; }
-.home-welcome-actions { width: 1%; }
-.home-collection { max-width: 440px; margin-left: 24px; overflow: hidden; text-overflow: ellipsis; }
+.home-welcome-actions { width: 1%; white-space: nowrap; }
+.home-collection { max-width: 390px; margin-left: 24px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.home-welcome-actions .home-collection-dismiss { width: 46px; height: 46px; margin-left: 6px; padding: 0; vertical-align: middle; }
+.home-collection-dismiss svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; vertical-align: middle; }
 .home-welcome h1, .home-welcome #home-greeting-detail { word-wrap: break-word; }
 .home-welcome h1 { margin: 0; color: #f6f5f2; font-size: 46px; line-height: 1.12; }
 .home-welcome #home-greeting-detail { margin: 10px 0 0; color: #bdbcb9; font-size: 23px; }
@@ -64,17 +66,21 @@ button { cursor: pointer; }
 .home-rail .card-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; max-height: 3.45em; font-size: 23px; }
 .home-status { position: absolute; top: 4px; right: 0; margin: 0; color: #a8a8a6; font-size: 22px; }
 .home-status:empty { display: none; }
-.card-progress { display: inline-block; width: 104px; height: 7px; overflow: hidden; border-radius: 4px; background: #454247; }
+.card-metadata { position: relative; display: block; height: 33px; margin-top: 5px; line-height: 24px; }
+.card-progress { position: absolute; bottom: 3px; left: 0; width: 112px; height: 4px; overflow: hidden; border-radius: 2px; background: #454247; }
 .home-progress { display: block; height: 100%; border-radius: 4px; background: #f09243; }
 .home-played {
-  display: inline-block;
-  padding: 2px 7px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0 8px;
+  border: 1px solid #587562;
   border-radius: 6px;
-  background: #302922;
-  color: #f5dfc6;
-  font-size: 17px;
+  background: #283b31;
+  color: #d3e8d6;
+  font-size: 18px;
   font-weight: bold;
-  line-height: 20px;
+  line-height: 22px;
   white-space: nowrap;
 }
 .home-played:before {
@@ -92,13 +98,11 @@ button { cursor: pointer; }
 .media-card { position: relative; display: inline-block; width: 260px; margin: 0 25px 0 0; padding: 0; border: 0; background: transparent; color: #f6f5f2; text-align: left; vertical-align: top; white-space: normal; }
 .poster { position: relative; display: block; width: 260px; height: 286px; overflow: hidden; border: 3px solid transparent; border-radius: 9px; background-color: #24272c; background-position: center; background-size: cover; }
 .poster img { display: block; width: 100%; height: 100%; }
+.media-card.is-watched .poster { border-color: #587562; box-shadow: 0 0 0 3px #283b31; }
 .media-card.is-focused, .media-card:focus { outline: none; }
 .media-card.is-focused .poster, .media-card:focus .poster { border-color: #f09243; box-shadow: 0 0 0 3px rgba(240,146,67,.25); }
 .poster-kind { display: block; margin-top: 5px; color: #bdbcb9; font-size: 18px; font-weight: bold; }
 .release-year { display: inline-block; color: #bdbcb9; font-size: 20px; line-height: 1.2; font-weight: normal; }
-.release-year, .home-played, .card-progress { margin-top: 5px; vertical-align: middle; }
-.release-year + .home-played { margin-left: 8px; }
-.release-year + .card-progress { margin-left: 10px; }
 .card-title { display: block; margin-top: 14px; max-height: 4.6em; overflow: hidden; color: #f6f5f2; font-size: 25px; font-weight: bold; line-height: 1.15; white-space: normal; overflow-wrap: break-word; word-wrap: break-word; }
 .art-horizon { background-image: url('assets/poster-horizon.svg'); }
 .art-night { background-image: url('assets/poster-night.svg'); }
@@ -239,7 +243,7 @@ button { cursor: pointer; }
 .movie-row { position: absolute; left: 24px; width: 100%; white-space: nowrap; }
 .movie-row .card-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; max-height: 3.45em; }
 .movie-row-previous { top: -125px; opacity: .4; }
-.movie-row-previous .card-title, .movie-row-previous .release-year, .movie-row-previous .home-played, .movie-row-previous .card-progress { display: none; }
+.movie-row-previous .card-title, .movie-row-previous .card-metadata { display: none; }
 .movie-row-active { top: 240px; }
 .movie-row-preview { top: 730px; margin-top: 0; opacity: .4; }
 

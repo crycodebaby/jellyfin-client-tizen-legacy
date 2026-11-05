@@ -2,6 +2,13 @@
 
 Private TV-Teststände. Den geprüften Installations- und Gerätestand führt der [Tizen-Leitfaden](docs/TIZEN_BUILD.md).
 
+## 0.1.43
+
+- Gesehene Filme haben einen matten salbeigrünen Posterrand und ein farblich passendes Badge unter dem Titel. Die Bildfläche bleibt frei.
+- Eine gültige Fortsetzungsposition bleibt auch bei bereits gesehenen Filmen als eigener Fortschrittsbalken sichtbar.
+- Klopapierwitz im Begrüßungsbanner für Deutsch neu formuliert.
+- Alte Sammlungsvorschläge auf Start zurückgesetzt. Neue Vorschläge laufen nach sieben Tagen ab und lassen sich direkt ausblenden.
+
 ## 0.1.42
 
 - Startseite mit fester Kopfzeile, besserem Umbruch der Begrüßung und Platz für längere Filmtitel.

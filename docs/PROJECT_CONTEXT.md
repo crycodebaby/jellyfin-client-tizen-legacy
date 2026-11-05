@@ -10,7 +10,7 @@ Zielgerät ist Samsung UE65KU6099, Tizen 2.4 und WebKit r152340. Laufzeitcode bl
 
 ## Aktueller Freigabestand
 
-- Version 0.1.42 bestand 98 Basis- und 80 UI-Tests mit FFmpeg und QR ohne Auslassungen. Der Build und das signierte Paket wurden geprüft. Apps2Samsung meldete das Update und den Start auf dem ersten TV. Die Bedienabnahme für 0.1.42 steht aus. Geräte- und Build-Nachweise stehen im [Tizen-Leitfaden](TIZEN_BUILD.md).
+- Version 0.1.43 bestand 98 Basis- und 80 UI-Tests mit FFmpeg und QR ohne Auslassungen. Build und signiertes Paket sind geprüft. Apps2Samsung meldete das Update und den Start auf dem ersten TV. Die Bedienabnahme steht aus. Geräte- und Build-Nachweise stehen im [Tizen-Leitfaden](TIZEN_BUILD.md).
 - Bei 0.1.41 bestätigte der Nutzer auf dem ersten TV das Fortsetzen eines Films nach Beenden und erneutem Öffnen. Die Wiedergabeart wurde nicht erfasst. Der zweite TV erhielt zuletzt 0.1.39.
 - Profilwechsel prüft die Zielsitzung vor dem Wechsel. Simulierte Tests prüfen erfolgreiche Wechsel, Serverausfall und ungültige Zielanmeldung.
 - Direktwiedergabe und HLS verwenden denselben Such- und Bestätigungsablauf zum Fortsetzen. Fortschritt bleibt während eines ausstehenden Sprungs unterdrückt. HLS-Zeitbasis und Suchfähigkeit müssen mit echten Medien am TV verifiziert werden.
@@ -54,7 +54,7 @@ Profile und Sammlungsverknüpfungen sind nach Serveradresse und Benutzer-ID getr
 
 TV-Designarbeit: [TV-UX-Analyse](TV_UX_REVIEW.md), [Fokus-Maps](TV_FOCUS_MAPS.md) und [Designwerkzeuge](DESIGN_TOOLING.md). Die überarbeitete [Designanleitung](../SKILL.md) trennt Hardwaregrenzen, Produktwünsche und veränderbare Gestaltung. Die Analyse vom 5. November ist keine neue UI-Version oder Geräteabnahme.
 
-Die Startseite hat eine feste Kopfzeile und eine umbruchfähige Begrüßung. Filmjahr, Gesehen-Markierung und Fortschritt stehen außerhalb der Poster. Entdecken bündelt Suche, Sortierung und kombinierbare Filter. Jahressortierung und Jahrzehntfilter wurden zusätzlich in der Browser-Vorschau mit der lokalen Jellyfin-Bibliothek geprüft. Die Personenseite hat derzeit eine gekürzte Kurzbiografie und ein fest skaliertes TV-Layout. Ihre Neugestaltung steht in [TASKS.md](../TASKS.md).
+Die Startseite hat eine feste Kopfzeile und eine umbruchfähige Begrüßung. Neue Sammlungsvorschläge sind lokal ausblendbar und laufen nach sieben Tagen ab. Filmjahr, Gesehen-Badge und Fortschritt stehen außerhalb der Poster. Gesehene Filme mit gültiger Fortsetzungsposition zeigen Badge und Balken. Entdecken bündelt Suche, Sortierung und kombinierbare Filter. Jahressortierung und Jahrzehntfilter wurden zusätzlich in der Browser-Vorschau mit der lokalen Jellyfin-Bibliothek geprüft. Die Personenseite hat derzeit eine gekürzte Kurzbiografie und ein fest skaliertes TV-Layout. Ihre Neugestaltung steht in [TASKS.md](../TASKS.md).
 
 In Entdecken entsteht die Darsteller-Rangliste aus der Besetzung verfügbarer Filme des angemeldeten Profils. Der Client lädt die Filmdaten seitenweise und hält die vollständige Rangliste bis zu fünf Minuten im Speicher der Sitzung. Namenssuche und A–Z filtern diese Rangliste. Wenn keine Filmzahlen ermittelt werden können, bleibt die Personensuche mit entsprechendem Hinweis nutzbar.
 

@@ -2,7 +2,7 @@
 <widget xmlns="http://www.w3.org/ns/widgets"
         xmlns:tizen="http://tizen.org/ns/widgets"
         id="http://smairys.local/mediathek"
-        version="0.1.42"
+        version="0.1.43"
         viewmodes="maximized">
   <name>Smairys Mediathek</name>
   <description>Jellyfin-Mediathek für Samsung Smart TVs</description>

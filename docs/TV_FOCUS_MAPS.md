@@ -1,6 +1,6 @@
 # Fokus-Maps der TV-Oberfläche
 
-Stand: 5. November 2026, Quellstand 0.1.42. Dies ist eine Beschreibung des Ist-Verhaltens mit ausdrücklich getrennten Zieländerungen. Kein Laufzeitcode. Nach Navigationsänderungen mit `move`, dem `keydown`-Handler in app.js und den Verhaltenstests abgleichen.
+Stand: 5. November 2026, Quellstand 0.1.43. Dies ist eine Beschreibung des Ist-Verhaltens mit ausdrücklich getrennten Zieländerungen. Kein Laufzeitcode. Nach Navigationsänderungen mit `move`, dem `keydown`-Handler in app.js und den Verhaltenstests abgleichen.
 
 **Nachweise:** B = mit Browser und Pfeiltasten beobachtet; Q = aus Quellcode abgeleitet; T = isolierter Verhaltenstest. Die Browserprüfung nutzte 1920×1080 und eine vorhandene Anmeldung. Kein neuer TV-Test, kein echter Filmstart, keine Änderung an Benutzerkonten oder Wiedergabefortschritt. Private Namen und Medien sind abstrahiert.
 
@@ -23,6 +23,8 @@ flowchart LR
 B: Start + oben → Profil, Start + rechts → erste Filmreihe. Auf und Ab wechseln zwischen den Reihen im begrenzten Inhaltsbereich unter der Kopfzeile. Die Rückkehr zur ersten Reihe zeigt die Begrüßung wieder. Ist eine Banneraktion sichtbar, erreicht man sie aus der ersten Filmreihe mit oben. Q: Spalte beim Reihenwechsel möglichst erhalten. Nicht vorhandene Reihen werden übersprungen. Am linken Rand einer bereits weitergeblätterten Heimreihe lädt links zunächst die Vorgängerseite. Dieser Unterschied zur allgemeinen Filmliste bleibt zu bewerten.
 
 Sidebar hoch/runter wechselt den Fokus, OK aktiviert den Bereich. Rechts betritt den aktuell geöffneten Inhalt, aktiviert nicht automatisch die nur fokussierte andere Sidebar-Zeile. Q: `move`, `activate`, `firstHomeCard`.
+
+Vom Sammlungsvorschlag führt Rechts zum Ausblenden-Symbol und Links zurück zum Vorschlag. OK auf dem Symbol entfernt den lokalen Vorschlag und gibt den Fokus an die erste verfügbare Filmkarte zurück. T: `home-integration.test.cjs`.
 
 ## 2. Filme, Sammlungsinhalt und Entdecken
 
