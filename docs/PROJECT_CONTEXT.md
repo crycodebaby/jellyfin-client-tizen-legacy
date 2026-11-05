@@ -11,7 +11,7 @@ Zielgerät ist Samsung UE65KU6099, Tizen 2.4 und WebKit r152340. Laufzeitcode bl
 ## Aktueller Freigabestand
 
 - Version 0.1.41 hat 98 Basis- und 80 UI-Tests bestanden, ohne ausgelassene Tests bei konfiguriertem FFmpeg und Python. npm audit meldete keine bekannten Schwachstellen. Das ist eine zeitpunktbezogene Prüfung der Entwicklungsabhängigkeiten.
-- Web-Build geprüft. Apps2Samsung meldete Installation und Start von 0.1.41 auf dem ersten TV. Die neue Fortsetzen-Funktion wartet auf Nutzerprüfung.
+- Web-Build geprüft. Apps2Samsung meldete Installation und Start von 0.1.41 auf dem ersten TV. Der Nutzer bestätigte Fortsetzen, Beenden und erneutes Öffnen an der richtigen Stelle bei einem Film. Die dabei verwendete Wiedergabeart wurde nicht erfasst.
 - Der zweite TV erhielt zuletzt 0.1.39. Kein automatisches Update implementiert.
 - Profilwechsel prüft die Zielsitzung vor dem Wechsel. Simulierte Tests prüfen erfolgreiche Wechsel, Serverausfall und ungültige Zielanmeldung.
 - Direktwiedergabe und HLS verwenden denselben Such- und Bestätigungsablauf zum Fortsetzen. Fortschritt bleibt während eines ausstehenden Sprungs unterdrückt. HLS-Zeitbasis und Suchfähigkeit müssen mit echten Medien am TV verifiziert werden.

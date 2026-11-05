@@ -11,7 +11,8 @@ Aktueller Stand und Prüfgrenzen stehen in [PROJECT_CONTEXT.md](docs/PROJECT_CON
 - [x] Position bei serverseitigem Tonwechsel erhalten, simuliert prüfen.
 - [x] Serien-Einstieg und Serienanzahl standardmäßig im UI ausblenden.
 - [x] Web-Build prüfen und 0.1.41 laut Apps2Samsung auf dem ersten TV installieren/starten.
-- [ ] Echte Filmformate mit Wiederaufnahme, Tonwechsel, Untertiteln und Wiedergabeende am TV abnehmen.
+- [x] Fortsetzen nach Beenden und erneutem Öffnen bei einem Film auf dem ersten TV vom Nutzer bestätigt.
+- [ ] Weitere echte Filmformate, HLS, Tonwechsel, Untertitel und Wiedergabeende am TV abnehmen.
 - [ ] Fehlerfälle mit zwei echten Konten, Neustart, Speicherfehler und Serverausfall am Gerät prüfen.
 
 ## Wiedergabe

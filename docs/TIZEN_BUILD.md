@@ -120,3 +120,5 @@ Version 0.1.37 ergänzt einen Personentipp aus einem vorhandenen Film und die An
 Quellstand 0.1.40 stabilisiert Profilnavigation und optionale Sitzungsschnittstellen. Der vollständige Testlauf bestand mit 98 Basis- und 79 UI-Tests ohne übersprungene Tests bei lokal konfiguriertem FFmpeg und Python. Nach einer abschließenden QR-Adressprüfung bestanden zusätzlich acht Login-Tests. Der Web-Build wurde danach erfolgreich geprüft. Kein TV-Paket installiert. Die Heimserver-Vorlage wurde nur als Compose-Konfiguration validiert, kein neuer Server gestartet.
 
 0.1.41 bestand 98 Basis- und 80 UI-Tests mit FFmpeg und QR ohne ausgelassene Tests. Web-Build geprüft, Apps2Samsung meldete Signierung, Installation und Start auf dem ersten TV. Fortsetzen bei HLS und Tonwechsel ist simuliert geprüft und wartet auf Geräteabnahme. Das zweite Gerät bleibt auf dem zuvor installierten Stand.
+
+Der Nutzer bestätigte am 5. November 2026 für 0.1.41, dass ein angefangener Film beim Fortsetzen sowie nach Beenden und erneutem Öffnen an der richtigen Stelle weiterläuft. Daraus folgt keine pauschale Freigabe aller Codecs oder HLS-Konstellationen.
