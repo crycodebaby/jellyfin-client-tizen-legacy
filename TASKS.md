@@ -1,66 +1,46 @@
-# Projektaufgaben
+# Offene Projektaufgaben
 
-## Phase 0 – technische Machbarkeit
+Aktueller Stand und Prüfgrenzen stehen in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md). Produktziele in [ZIELBILD.md](docs/ZIELBILD.md).
 
-### Toolchain und Paket
+## Stabilisierung 0.1.41
 
-- [ ] Tizen Web CLI reparieren: `build-web` scheitert bei 80 % mit `NoClassDefFoundError: org/eclipse/core/runtime/Plugin`.
-- [ ] Samsung TV Extension und TV-Projektvorlagen bereitstellen; sichtbar sind derzeit Tizen-Plattformen 6.0–9.0 ohne TV-Vorlagen.
-- [ ] Gültiges Samsung-TV-Signaturprofil finden oder einrichten.
-- [ ] Signiertes WGT bauen und Paketinhalt sowie Signaturen prüfen.
+- [x] Vollständige lokale Tests mit FFmpeg und QR ausführen.
+- [x] Profilwechsel vor Austausch der aktiven Sitzung validieren.
+- [x] Serverausfall und ungültige Zielanmeldung beim Profilwechsel simuliert prüfen.
+- [x] Fortsetzen auch bei HLS durch bestätigten Player-Suchvorgang prüfen.
+- [x] Position bei serverseitigem Tonwechsel erhalten, simuliert prüfen.
+- [x] Serien-Einstieg und Serienanzahl standardmäßig im UI ausblenden.
+- [x] Web-Build prüfen und 0.1.41 laut Apps2Samsung auf dem ersten TV installieren/starten.
+- [ ] Echte Filmformate mit Wiederaufnahme, Tonwechsel, Untertiteln und Wiedergabeende am TV abnehmen.
+- [ ] Fehlerfälle mit zwei echten Konten, Neustart, Speicherfehler und Serverausfall am Gerät prüfen.
 
-### Echter Fernseher
+## Wiedergabe
 
-- [ ] UE65KU6099 per SDB verbinden; `sdb devices` zeigte zuletzt kein Gerät.
-- [ ] WGT installieren und starten.
-- [ ] Steuerkreuz, sichtbaren Fokus, OK und Zurück prüfen.
-- [ ] Jellyfin-HTTP-Anfrage aus der App prüfen.
-- [ ] Aufrufbarkeit von AVPlay auf Tizen 2.4 feststellen.
-- [ ] Bewegungsmodi, Fokus, Ladeanzeige und Abbruch einer Anfrage auf dem Zielgerät prüfen; Reaktionszeiten und Speicher dort messen.
+- [ ] Geräteprofil anhand repräsentativer eigener Testdateien erweitern. MKV, HEVC und AC3 sind noch keine freigegebenen Fähigkeiten.
+- [ ] HLS-Zeitbasis und native Suchfähigkeit am Ziel-TV verifizieren.
+- [ ] Spurwechsel bei pausierter Wiedergabe und Wiederherstellung der Pause verbessern.
+- [ ] Externe Textuntertitel während Transcoding und Bilduntertitel untersuchen.
+- [ ] Wiederholung fehlgeschlagener Fortschrittsmeldungen und Offline-Verhalten entwickeln.
+- [ ] Serienabnahme erst bei tatsächlichem Bedarf. Bis dahin bleibt enableSeries aus.
 
-## Öffentliche Veröffentlichung
+## Konten und Betrieb
 
-- [x] MIT-Lizenz für Quellcode und Dokumentation festgelegt.
-- [x] Markenlogos von MIT ausgenommen und zentral austauschbar gemacht.
-- [x] Externe Beiträge während der Entwicklungsphase ausgeschlossen; GitHub-Einrichtung dokumentiert.
-- [x] `.gitignore`, Laufzeit-Dateiliste und automatisierte Quell-/Browserprüfungen vorbereitet.
-- [x] Desktop-Screenshot für die README erstellt; der Screenshot mit Markenlogo ist nicht unter MIT lizenziert.
-- [ ] Vor jedem Push Dateien und erreichbare Git-Historie auf private Daten und Commit-E-Mail-Adressen prüfen.
-- [x] Bereinigten Veröffentlichungszweig `github-ready` mit eigener Historie und GitHub-Noreply-Adresse vorbereiten; ältere lokale Entwicklungscommits bleiben lokal.
-- [x] Öffentliches GitHub-Repository `crycodebaby/jellyfin-client-tizen-legacy` erstellen.
-- [x] Geprüften Stand zum GitHub-Repository hochgeladen; der lokale Veröffentlichungszweig folgt `origin/main`.
-- [x] Issues, Pull Requests, Discussions und Wiki deaktiviert; nur der Inhaber wurde als Collaborator gefunden.
-- [ ] Commit-Kommentare und zusätzliche Branch-Schutzregeln prüfen; bisher ist kein Ruleset eingerichtet.
+- [ ] Passwort-Fallback und sichere Tokenablage auf Tizen prüfen.
+- [ ] Account-Bilder anbinden und gespeicherte Profile gezielt entfernen können.
+- [ ] Update-Dienst und Versionsanzeige entwickeln. Derzeit installiert Apps2Samsung manuell.
+- [ ] Plattformunabhängige Geräteprofile und mobile Oberfläche vorbereiten.
 
-## Erledigt
+## Clips, Fernzugriff und Serverumzug
 
-- [x] Gewünschte Designvorschau mit Seitenleiste, Startseite, Darsteller-/Duo-Beispielen, Suche, Details und temporärer Merkliste umgesetzt.
-- [x] Navigation, Rückkehr aus Dialogen, Suche, Darsteller-Duo und Merkliste im Desktop-Browser mit Tastatur geprüft.
-- [x] Verbindungsdialog mit leerer Eingabe und lokaler HTTP-Testantwort geprüft; der Test auf dem TV ist offen.
-- [x] Änderbare Jellyfin-Adresse und Anfrage an `/System/Info/Public` eingebaut.
-- [x] Smairys-Logos in einem austauschbaren Branding-Ordner zusammengeführt.
-- [x] README und gemeinsame Einstiegsdokumente für Agenten angelegt.
-- [x] Projektname und Slogan für eigene Varianten in `branding/config.js` zentral konfigurierbar gemacht.
-- [x] GitHub-Actions-Workflow für eigene Pushes und manuelle Prüfungen vorbereitet; keine Pull-Request-Auslösung.
-- [x] Bewegungsmodi, verzögerte Ladeanzeige, Anfrageabbruch und optionale lokale Diagnose umgesetzt und im Desktop-Browser geprüft.
+- [ ] Clipquote, Speicherfehler, Löschung und authentifizierter mobiler Download.
+- [ ] Clipgrenzen und Ton mit echten Dateien prüfen.
+- [ ] Relay für getrennte HTTPS-Adressen, Hostprüfung und QR-Ziele entwickeln und abnehmen.
+- [ ] Heimserver nur als spätere Option. Vorlagen erst nach Hardwareentscheidung bereitstellen.
+- [ ] Sicherung wiederherstellen und Servermigration mit geänderten Medienpfaden und IDs testen.
+- [ ] Privaten Mobilfunkzugriff mit berechtigtem Gerät abnehmen.
 
-## Verifizierter Stand (27.10.2026)
+## Repository
 
-- Der öffentliche Jellyfin-Infoendpunkt antwortete vom Entwicklungs-PC; Version 12.3.0 wurde beobachtet. Private Server- und LAN-Daten stehen nicht in den öffentlichen Projektdateien.
-- Tizen CLI meldet Version 2.5.25. `build-web` scheitert an der fehlenden Eclipse-Klasse `org.eclipse.core.runtime.Plugin`; ein WGT wurde nicht erzeugt.
-- Sichtbare SDK-Plattformen: Tizen 6.0, 6.5, 7.0, 8.0 und 9.0. Samsung TV Extension und TV-Vorlagen wurden in den geprüften Installationspfaden nicht gefunden.
-- Unter `C:\tizen-studio-data\ide\keystore\profiles.xml` wurde kein Signaturprofil gefunden.
-- `sdb devices` zeigte kein Gerät; der TV war unter der dokumentierten Entwicklungsadresse nicht erreichbar.
-- Installation, Fernbedienung am Gerät, Jellyfin-Anfrage vom TV und AVPlay sind ungetestet.
-- Der geprüfte Veröffentlichungszweig wurde auf GitHub veröffentlicht; die Einstellungen und offenen Schutzmaßnahmen stehen in `docs/GITHUB_SETUP.md`.
-
-## Designprüfung – vorläufig, nur Desktop
-
-- **Hierarchie:** eine primäre Serveraktion, ein Hero und eine Beispielreihe; redundante Beschriftungen entfernt.
-- **Fernbedienung:** einzelner sichtbarer Fokus und Richtungsnavigation im Desktop-Browser geprüft.
-- **Minimalismus:** keine doppelten Einstellungsbuttons oder erklärenden Kacheln.
-- **Lesbarkeit:** Größen für 1080p gewählt; Betrachtungsabstand am TV muss geprüft werden.
-- **Konsistenz:** gemeinsame dunkle Palette, orangefarbener Fokus und wiederverwendete Karten und Aktionen.
-- **Microinteractions:** kurze, einstellbare Übergänge; eine Ladeanimation läuft nur während einer langsameren Verbindungsprüfung.
-
-Das Skill-Ziel von 90/100 wird erst nach einer Bewertung am echten TV samt Betrachtungsabstand und Laufzeitverhalten eingeordnet.
+- [ ] Neue Änderungen künftig in kleinen nachvollziehbaren Commits sichern.
+- [ ] CI-Ergebnis nach GitHub-Push prüfen.
+- [ ] Historische Branches mit privaten Daten weder zusammenführen noch pauschal veröffentlichen.

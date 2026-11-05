@@ -24,6 +24,13 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Chromium für Browserprüfungen installieren
         run: npx playwright install --with-deps --only-shell chromium
+      - name: Medien- und QR-Prüfwerkzeuge installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3-reportlab
+          echo "SMAIRYS_TEST_FFMPEG=/usr/bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "SMAIRYS_TEST_FFPROBE=/usr/bin/ffprobe" >> "$GITHUB_ENV"
+          echo "SMAIRYS_QR_PYTHON=/usr/bin/python3" >> "$GITHUB_ENV"
       - name: Quellcode und Vorschau prüfen
         run: npm test
       - name: Veröffentlichte Historie prüfen

@@ -1,5 +1,7 @@
 # Bewegung, Laden und Diagnose
 
+Beim Wechsel der Filmreihe blendet Modus Voll die neue aktive Reihe kurz richtungsabhängig ein; Reduziert nutzt ein kurzes Einblenden, Aus keine Animation. Die Navigation und der Fokus warten nicht auf das Animationsende. Die Darstellung und Leistung auf dem Ziel-TV sind noch zu prüfen.
+
 Die Oberfläche ist weiterhin eine Vorschau mit Beispieldaten. Die folgenden Funktionen wurden im Desktop-Browser geprüft; ihre Darstellung und Leistung auf dem Ziel-TV sind offen.
 
 ## Bewegungsmodi
@@ -12,7 +14,7 @@ Im Verbindungsdialog stehen **Voll**, **Reduziert** und **Aus** zur Auswahl. Die
 
 Der Orbit erscheint erst nach 200 ms bei einer noch laufenden Verbindungsprüfung. Eine zweite Prüfung währenddessen wird verhindert. Erfolg, Fehler und Zeitüberschreitung beenden den Ladezustand. Beim Verlassen des Dialogs oder Ändern der Adresse wird die Anfrage abgebrochen und ihre spätere Antwort verworfen. In den Modi Reduziert und Aus bleibt die Anzeige statisch.
 
-Weitere Ladezustände für echte Bibliotheken werden erst mit deren Anbindung benötigt. Virtualisierung und verzögertes Laden von Bildern sollen anhand von Messungen auf dem Zielgerät entschieden werden; die jetzigen kleinen Beispielreihen belegen dafür keinen Bedarf.
+Der experimentelle Filmpfad zeigt beim Nachladen einen Textstatus und begrenzt die Anzeige auf fünf Karten. Bildladeverhalten und tatsächliche Ressourcenlast müssen auf dem Zielgerät gemessen werden; weitere Optimierungen sollten sich an diesen Messungen orientieren.
 
 ## Lokale Diagnose
 
@@ -26,4 +28,4 @@ Die Ereignisse erfassen unter anderem DOM-Aktualisierungen und einen angefordert
 
 `npm run measure:navigation` misst 30 synthetische, abwechselnde Tastendrücke in einem Headless-Desktop-Chromium. In je einem isolierten Lauf lagen die synchronen Bearbeitungszeiten vor der Änderung bei durchschnittlich 0,28 ms, p95 0,30 ms und maximal 2,20 ms; danach bei durchschnittlich 0,10 ms, p95 0,20 ms und maximal 0,50 ms. Diese Einzelmessungen sind durch die Zeitauflösung begrenzt und weder ein belastbarer Leistungsvergleich noch eine Messung sichtbarer Bildausgabe, Seitenwechsel oder TV-Reaktionszeit.
 
-Der Versuch mit der installierten Tizen-CLI scheiterte weiterhin bei 80 % an `NoClassDefFoundError: org/eclipse/core/runtime/Plugin`; `sdb devices` zeigte kein Gerät. Ein WGT-Build und eine Prüfung der Animationen, Fernbedienung, Speicherlast und Netzwerkabbruch auf dem Fernseher stehen aus.
+Der Versuch mit der installierten Tizen-CLI scheiterte weiterhin bei 80 % an `NoClassDefFoundError: org/eclipse/core/runtime/Plugin`; `sdb devices` zeigte bei der erneuten Prüfung kein Gerät, obwohl Apps2Samsung den TV anzeigt und die Netzwerkports erreichbar waren. Ein WGT-Build und eine Prüfung der Animationen, Fernbedienung, Speicherlast und Netzwerkabbruch auf dem Fernseher stehen aus.

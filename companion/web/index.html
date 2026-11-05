@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0b0c0e">
+  <title>Smairys Connect</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="top"><span class="brand">Smairys <span>Connect</span></span><span id="connection" class="connection" role="status">Verbindet …</span></header>
+    <section id="welcome" class="welcome" aria-live="polite"><h1>Deine Mediathek.</h1></section>
+    <section id="login" class="login" hidden aria-labelledby="login-title">
+      <div class="login-mark" aria-hidden="true">S</div>
+      <h2 id="login-title">Am Fernseher anmelden</h2>
+      <p class="login-subtitle">Mit deinem Jellyfin-Konto</p>
+      <form id="login-form">
+        <label for="login-user">Benutzername</label>
+        <input id="login-user" name="username" type="text" autocomplete="username" autocapitalize="none" required>
+        <label for="login-password">Passwort</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <button id="login-submit" type="submit">Anmelden</button>
+      </form>
+      <p id="login-message" class="login-message" role="status" aria-live="polite"></p>
+    </section>
+    <section id="app" hidden>
+      <form id="search-form" class="search" role="search"><label class="sr-only" for="query">Suche</label><span aria-hidden="true" class="magnify"></span><input id="query" type="search" autocomplete="off" placeholder="Titel oder Name suchen"><button type="submit">Suchen</button></form>
+      <div class="tabs" role="group" aria-label="Suchbereich"><button id="movies-tab" class="tab active" type="button" aria-pressed="true">Filme</button><button id="people-tab" class="tab" type="button" aria-pressed="false">Schauspieler</button></div>
+      <details class="device-options"><summary>Gerätename</summary><form id="device-form" class="device-form"><label for="device-name">Name auf dem Fernseher</label><div><input id="device-name" maxlength="40" autocomplete="off"><button type="submit">Speichern</button></div><small id="device-message" role="status"></small></form></details>
+      <div class="section-head"><h2 id="section-title">Filme entdecken</h2><button id="back" class="text-button" type="button" hidden>Zurück</button></div>
+      <p id="message" class="message" role="status" aria-live="polite"></p><button id="retry" class="retry" type="button" hidden>Erneut versuchen</button><div id="results" class="grid"></div><button id="more" class="more" type="button" hidden>Mehr anzeigen</button>
+    </section>
+    <section id="failure" class="failure" hidden><h2>Verbindung nicht verfügbar</h2><p id="failure-text">Bitte starte die Verbindung am Fernseher erneut und scanne den neuen Code.</p></section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

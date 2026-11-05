@@ -6,11 +6,12 @@ Die mitgelieferten Bilddateien können mit den gleichen Dateinamen ersetzt werde
 
 | Datei | Verwendung | Format |
 | --- | --- | --- |
-| `app-icon.png` | TV-Startsymbol und Logo in der Seitenleiste | Quadratisches PNG |
+| `app-icon.png` | Logo in der Seitenleiste | Quadratisches PNG |
+| `tv-icon.png` | App-Symbol für das lokale TV-Paket | Breites PNG mit schwarzem Hintergrund; Darstellung am Ziel-TV prüfen |
 | `wordmark-horizontal.png` | Seitliche Wortmarke für spätere Branding-Flächen | Transparentes PNG |
 | `wordmark-full.png` | Vollständige Wortmarke für spätere Branding-Flächen | Transparentes PNG |
 | `preview.png` | Screenshot der Smairys-Vorschau für die README | Enthält das Smairys-Logo |
 
 Für den Namen unter dem TV-App-Symbol zusätzlich `<name>` in `config.xml` ändern. Die Tizen-App-ID ist hiervon unabhängig; eine Änderung der Paketidentität kann spätere Updates beeinflussen.
 
-Die drei mitgelieferten Smairys-Logos und der Screenshot mit Logo sind nicht von der MIT-Lizenz erfasst. Für ein eigenes Projekt bitte Bilder verwenden, für die entsprechende Nutzungsrechte bestehen. Die MIT-Lizenz gewährt keine Rechte an Smairys-Namen oder Marken.
+Die mitgelieferten Smairys-Logos, das daraus gestaltete TV-Symbol und der Screenshot mit Logo sind nicht von der MIT-Lizenz erfasst. Für ein eigenes Projekt bitte Bilder verwenden, für die entsprechende Nutzungsrechte bestehen. Die MIT-Lizenz gewährt keine Rechte an Smairys-Namen oder Marken.

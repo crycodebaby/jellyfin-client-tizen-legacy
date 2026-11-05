@@ -142,7 +142,7 @@ Nicht alle verfügbaren Metadaten auf jeder Karte darstellen.
 
 Beispiel: Jahr, Genre, Bewertung und Laufzeit gehören primär auf die Detailseite.
 
-Maximal zwei Textzeilen für einen Filmtitel.
+Filmtitel bleiben gut lesbar; die aktuell auf dem TV bestätigte Darstellung erlaubt bis zu vier Zeilen.
 
 Filmreihen erhalten eigenständige Collection-Cards.
 
@@ -257,7 +257,7 @@ Ein auf dem Entwicklungs-PC schönes Interface ist wertlos, wenn es auf dem Fern
 
 ## 10. Smairys Connect
 
-Im Profilmenü soll später „Mit Smartphone verbinden“ verfügbar sein.
+Im Profilmenü ist die prototypische Handy-Verbindung verfügbar; Prüfstand und Grenzen stehen in `docs/PHONE_COMPANION.md`.
 
 Darstellung:
 

@@ -1,0 +1,26 @@
+services:
+  jellyfin:
+    image: ${JELLYFIN_IMAGE:?Set an explicit tested Jellyfin image tag}
+    user: "${JELLYFIN_UID:?Set Jellyfin UID}:${JELLYFIN_GID:?Set Jellyfin GID}"
+    restart: unless-stopped
+    ports:
+      - "${JELLYFIN_BIND_IP:-127.0.0.1}:8096:8096/tcp"
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - type: bind
+        source: ${JELLYFIN_CONFIG:?Set configuration directory}
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${JELLYFIN_CACHE:?Set cache directory}
+        target: /cache
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${JELLYFIN_MEDIA:?Set media directory}
+        target: /media
+        read_only: true
+        bind:
+          create_host_path: false

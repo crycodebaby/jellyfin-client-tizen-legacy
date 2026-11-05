@@ -8,8 +8,39 @@ const { DOMParser } = require('@xmldom/xmldom');
 const { root, runtimeFiles } = require('./runtime-files.cjs');
 const runtime = new Set(runtimeFiles());
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const widgets = 'http://www.w3.org/ns/widgets';
+const tizen = 'http://tizen.org/ns/widgets';
 
-for (const file of ['app.js', 'diagnostics.js', 'branding/config.js']) {
+// Project invariants only: the Tizen SDK remains responsible for schema validation.
+function validateManifest(manifest) {
+  const widget = manifest.documentElement;
+  assert.ok(widget && widget.localName === 'widget' && widget.namespaceURI === widgets, 'Manifest benötigt ein Widget im W3C-Namensraum.');
+  function one(namespace, name) {
+    const nodes = manifest.getElementsByTagNameNS(namespace, name);
+    assert.equal(nodes.length, 1, `Manifest benötigt genau ein ${name}-Element.`);
+    return nodes[0];
+  }
+  const content = one(widgets, 'content');
+  const icon = one(widgets, 'icon');
+  const app = one(tizen, 'application');
+  const profile = one(tizen, 'profile');
+  const setting = one(tizen, 'setting');
+  const packageId = app.getAttribute('package');
+  const appId = app.getAttribute('id');
+  assert.ok(packageId && appId.startsWith(`${packageId}.`) && appId.length > packageId.length + 1,
+    'Anwendungs-ID muss aus Paket-ID und nichtleerem App-Namen bestehen.');
+  assert.equal(app.getAttribute('required_version'), '2.3');
+  assert.equal(profile.getAttribute('name'), 'tv-samsung', 'Samsung-TV-Profil fehlt.');
+  assert.equal(setting.getAttribute('hwkey-event'), 'enable', 'Hardware-Tastenereignisse müssen aktiviert sein.');
+  assert.ok(Array.from(manifest.getElementsByTagNameNS(tizen, 'privilege')).some((node) => node.getAttribute('name') === 'http://tizen.org/privilege/internet'), 'Internetberechtigung fehlt.');
+  assert.ok(Array.from(manifest.getElementsByTagNameNS(widgets, 'access')).some((node) => node.getAttribute('origin') === '*' && node.getAttribute('subdomains') === 'true'), 'Projekt benötigt Zugriff auf die editierbare Serveradresse.');
+  assert.ok(content.getAttribute('src') && icon.getAttribute('src'), 'Manifest benötigt Inhalt und Icon.');
+  return { content, icon };
+}
+
+if (require.main === module) {
+
+for (const file of ['app.js', 'banner-texts.js', 'diagnostics.js', 'jellyfin-http.js', 'jellyfin-client.js', 'companion-tv.js', 'device-defaults.js', 'playback.js', 'avplay-adapter.js', 'branding/config.js']) {
   acorn.parse(read(file), { ecmaVersion: 5, sourceType: 'script' });
 }
 console.log('ES5-Syntax der TV-Laufzeit geprüft.');
@@ -20,17 +51,10 @@ function parseXml(file) {
 }
 
 const manifest = parseXml('config.xml');
-assert.equal(manifest.documentElement.localName, 'widget');
-const widgets = 'http://www.w3.org/ns/widgets';
-const tizen = 'http://tizen.org/ns/widgets';
-const content = manifest.getElementsByTagNameNS(widgets, 'content')[0];
-const icon = manifest.getElementsByTagNameNS(widgets, 'icon')[0];
-const app = manifest.getElementsByTagNameNS(tizen, 'application')[0];
-assert.ok(content && icon && app, 'Manifest benötigt content, icon und tizen:application.');
-assert.equal(app.getAttribute('required_version'), '2.3');
+const { content, icon } = validateManifest(manifest);
 
 function requireRuntimeAsset(reference, from) {
-  if (!reference || /^(?:https?:|data:|#)/i.test(reference)) return;
+  if (!reference || /^(?:https?:|data:|#)/i.test(reference) || reference === '$WEBAPIS/webapis/webapis.js') return;
   const relative = path.posix.normalize(reference);
   assert.ok(!relative.startsWith('../') && !relative.startsWith('/'), `${from}: Pfad außerhalb des Projekts: ${reference}`);
   assert.ok(fs.existsSync(path.join(root, relative)), `${from}: Datei fehlt: ${relative}`);
@@ -58,3 +82,6 @@ for (const file of markdown) {
   }
 }
 console.log('Lokale Dokumentationslinks geprüft.');
+}
+
+module.exports = { validateManifest };
